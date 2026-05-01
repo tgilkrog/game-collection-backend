@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use CopyPart;
 use Illuminate\Database\Eloquent\Model;
 
 class GameCopy extends Model
@@ -14,9 +15,6 @@ class GameCopy extends Model
         'purchase_price',
         'purchase_date',
         'notes',
-        'case_condition_id',
-        'disc_condition_id',
-        'manual_condition_id',
     ];
 
     protected $casts = [
@@ -31,18 +29,8 @@ class GameCopy extends Model
         return $this->belongsTo(Platform::class);
     }
 
-    public function caseCondition()
+    public function parts()
     {
-        return $this->belongsTo(Condition::class, 'case_condition_id');
-    }
-
-    public function discCondition()
-    {
-        return $this->belongsTo(Condition::class, 'disc_condition_id');
-    }
-
-    public function manualCondition()
-    {
-        return $this->belongsTo(Condition::class, 'manual_condition_id');
+        return $this->hasMany(CopyPart::class);
     }
 }

@@ -14,7 +14,9 @@ class GenreController extends Controller
      */
     public function index()
     {
-        return GenreResource::collection(Genre::latest()->paginate(10));
+        $genres = Genre::orderBy('name')->get();
+
+        return GenreResource::collection($genres);
     }
 
     /**

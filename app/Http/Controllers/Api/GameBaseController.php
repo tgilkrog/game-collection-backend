@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\GameBaseResource;
 use App\Models\GameBase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class GameBaseController extends Controller
 {
@@ -54,22 +55,51 @@ class GameBaseController extends Controller
     public function show(GameBase $gameBase)
     {
         $gameBase->load(['genres', 'game_copies']);
+        
         return new GameBaseResource($gameBase);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, GameBase $gameBase)
     {
-        //
+            $validated = $request->validate([
+                'title' => 'required|string',
+                'release_year' => 'required|integer',
+                'publisher' => 'nullable|string',
+                'developer' => 'nullable|string',
+                'description' => 'nullable|string',
+                'cover_image' => 'nullable|image',
+                'genres' => 'array'
+            ]);
+
+            if ($request->hasFile('cover_image')) {
+                if ($gameBase->cover_image) {
+                    $oldPath = str_replace('/storage/', '', $gameBase->cover_image);
+                    Storage::disk('public')->delete($oldPath);
+                }
+
+                $path = $request->file('cover_image')->store('covers', 'public');
+                $validated['cover_image'] = '/storage/' . $path;
+            }
+
+            $gameBase->update($validated);
+
+            if (isset($validated['genres'])) {
+                $gameBase->genres()->sync($validated['genres']);
+            }
+
+            return response()->json($gameBase->load('genres'));
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(GameBase $gameBase)
     {
-        //
+        $gameBase->delete();
+
+        return response()->noContent();
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+namespace App\Models;
+
 use App\Models\Condition;
 use App\Models\GameCopy;
 use Illuminate\Database\Eloquent\Model;

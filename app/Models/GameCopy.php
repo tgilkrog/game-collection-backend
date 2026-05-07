@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use CopyPart;
+use App\Models\CopyPart;
 use Illuminate\Database\Eloquent\Model;
 
 class GameCopy extends Model

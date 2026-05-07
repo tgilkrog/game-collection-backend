@@ -22,6 +22,7 @@ class GameBaseResource extends JsonResource
             'developer' => $this->developer,
             'description' => $this->description,
             'cover_image' => $this->cover_image,
+            'game_copies' => GameCopyResource::collection($this->whenLoaded('game_copies')),
             'genres' => GenreResource::collection($this->whenLoaded('genres')),
         ];
     }

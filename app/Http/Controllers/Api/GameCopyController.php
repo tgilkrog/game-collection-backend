@@ -14,7 +14,7 @@ class GameCopyController extends Controller
      */
     public function index()
     {
-        $gameCopies = GameCopy::orderBy('title')->get();
+        $gameCopies = GameCopy::with(['game'])->orderBy('title')->get();
 
         return GameCopyResource::collection($gameCopies);
     }

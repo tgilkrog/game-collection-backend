@@ -102,4 +102,20 @@ class GameBaseController extends Controller
 
         return response()->noContent();
     }
+
+    public function search(Request $request)
+    {
+        $query = $request->get('q', '');
+
+        $games = GameBase::with('game_copies.platform')
+            ->where('title', 'like', "%{$query}%")
+            ->limit(10)
+            ->get()
+            ->map(function ($game) {
+                $game->cover_image = asset($game->cover_image);
+                return $game;
+            });
+
+        return response()->json($games);
+    }
 }

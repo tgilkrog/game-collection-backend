@@ -6,7 +6,9 @@ use App\Http\Controllers\Api\GameCopyController;
 use App\Http\Controllers\Api\GenreController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\PlatformController;
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 
 Route::apiResource('home', HomeController::class);
 
@@ -20,3 +22,8 @@ Route::apiResource('game-copies', GameCopyController::class);
 Route::apiResource('conditions', ConditionController::class);
 
 Route::apiResource('platforms', PlatformController::class);
+
+Route::post('/login', [AuthController::class, 'login']);
+Route::middleware('auth:sanctum')->get('/me', function (Request $request) {
+    return $request->user();
+});

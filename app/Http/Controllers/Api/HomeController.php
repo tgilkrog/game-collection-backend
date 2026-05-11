@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\GameCopy;
+use App\Models\Platform;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -14,15 +15,19 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $platformTotals = GameCopy::query()
-            ->join('platforms', 'game_copies.platform_id', '=', 'platforms.id')
+       $platformTotals = Platform::query()
+            ->leftJoin('game_copies', 'platforms.id', '=', 'game_copies.platform_id')
             ->select(
                 'platforms.id',
                 'platforms.name',
                 'platforms.alias',
                 DB::raw('COUNT(game_copies.id) as total')
             )
-            ->groupBy('platforms.id', 'platforms.name', 'platforms.alias')
+            ->groupBy(
+                'platforms.id',
+                'platforms.name',
+                'platforms.alias'
+            )
             ->get();
 
         $totalCopies = GameCopy::count();

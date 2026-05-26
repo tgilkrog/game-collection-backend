@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\GameBaseResource;
+use App\Models\Condition;
 use App\Models\GameBase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -54,7 +55,7 @@ class GameBaseController extends Controller
      */
     public function show(GameBase $gameBase)
     {
-        $gameBase->load(['genres', 'game_copies.parts.condition']);
+        $gameBase->load(['genres', 'game_copies.parts.condition', 'game_copies.platform']);
 
         return new GameBaseResource($gameBase);
     }

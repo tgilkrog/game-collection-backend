@@ -55,7 +55,11 @@ class GameBaseController extends Controller
      */
     public function show(GameBase $gameBase)
     {
-        $gameBase->load(['genres', 'game_copies.parts.condition', 'game_copies.platform']);
+        $gameBase->load([
+            'genres',
+            'game_copies' => fn($q) => $q->where('user_id', auth()->id())
+                                          ->with(['parts.condition', 'platform']),
+        ]);
 
         return new GameBaseResource($gameBase);
     }

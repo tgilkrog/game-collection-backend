@@ -38,6 +38,11 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
+    public function gameCopies()
+    {
+        return $this->hasMany(GameCopy::class);
+    }
+
     protected function casts(): array
     {
         return [

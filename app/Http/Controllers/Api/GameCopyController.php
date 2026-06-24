@@ -14,7 +14,10 @@ class GameCopyController extends Controller
      */
     public function index()
     {
-        $gameCopies = GameCopy::with(['game'])->orderBy('title')->get();
+        $gameCopies = GameCopy::where('user_id', auth()->id())
+            ->with(['game'])
+            ->orderBy('title')
+            ->get();
 
         return GameCopyResource::collection($gameCopies);
     }
@@ -40,6 +43,8 @@ class GameCopyController extends Controller
             'parts.*.notes' => 'nullable|string',
         ]);
 
+        $validated['user_id'] = auth()->id();
+
         $gameCopy = GameCopy::create($validated);
 
         if (isset($validated['parts'])) {
@@ -57,6 +62,8 @@ class GameCopyController extends Controller
      */
     public function show(GameCopy $gameCopy)
     {
+        abort_if($gameCopy->user_id !== auth()->id(), 403);
+
         $gameCopy->load(['parts']);
         return new GameCopyResource($gameCopy);
     }
@@ -64,16 +71,16 @@ class GameCopyController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, GameCopy $gameCopy)
     {
-        //
+        abort_if($gameCopy->user_id !== auth()->id(), 403);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(GameCopy $gameCopy)
     {
-        //
+        abort_if($gameCopy->user_id !== auth()->id(), 403);
     }
 }

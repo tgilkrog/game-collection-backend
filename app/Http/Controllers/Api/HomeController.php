@@ -16,7 +16,10 @@ class HomeController extends Controller
     public function index()
     {
        $platformTotals = Platform::query()
-            ->leftJoin('game_copies', 'platforms.id', '=', 'game_copies.platform_id')
+            ->leftJoin('game_copies', function ($join) {
+                $join->on('platforms.id', '=', 'game_copies.platform_id')
+                     ->where('game_copies.user_id', auth()->id());
+            })
             ->select(
                 'platforms.id',
                 'platforms.name',
@@ -30,7 +33,7 @@ class HomeController extends Controller
             )
             ->get();
 
-        $totalCopies = GameCopy::count();
+        $totalCopies = GameCopy::where('user_id', auth()->id())->count();
 
         return response()->json([
             'total_copies' => $totalCopies,

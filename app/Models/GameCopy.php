@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class GameCopy extends Model
 {
     protected $fillable = [
+        'user_id',
         'title',
         'game_base_id',
         'platform_id',
@@ -20,6 +21,11 @@ class GameCopy extends Model
     protected $casts = [
         'purchase_date' => 'date'
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function game() {
         return $this->belongsTo(GameBase::class, 'game_base_id');

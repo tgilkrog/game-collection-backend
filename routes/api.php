@@ -10,20 +10,18 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
-Route::apiResource('home', HomeController::class);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
-Route::apiResource('genres', GenreController::class);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/me', fn(Request $request) => $request->user());
 
-Route::get('game-base/search', [GameBaseController::class, 'search']);
-Route::apiResource('game-base', GameBaseController::class);
+    Route::apiResource('home', HomeController::class);
+    Route::apiResource('genres', GenreController::class);
 
-Route::apiResource('game-copies', GameCopyController::class);
+    Route::get('game-base/search', [GameBaseController::class, 'search']);
+    Route::apiResource('game-base', GameBaseController::class);
 
-Route::apiResource('conditions', ConditionController::class);
-
-Route::apiResource('platforms', PlatformController::class);
-
-Route::post('/login', [AuthController::class, 'login']);
-Route::middleware('auth:sanctum')->get('/me', function (Request $request) {
-    return $request->user();
+    Route::apiResource('game-copies', GameCopyController::class);
+    Route::apiResource('conditions', ConditionController::class);
+    Route::apiResource('platforms', PlatformController::class);
 });

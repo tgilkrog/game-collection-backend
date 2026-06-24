@@ -14,7 +14,6 @@ class HomeResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        dd($request);
         return parent::toArray($request);
     }
 }

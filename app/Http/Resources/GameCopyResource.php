@@ -34,6 +34,10 @@ class GameCopyResource extends JsonResource
             'parts' => CopyPartResource::collection(
                 $this->whenLoaded('parts')
             ),
+            'user' => $this->whenLoaded('user', fn() => [
+                'id' => $this->user->id,
+                'name' => $this->user->name,
+            ]),
         ];
     }
 }

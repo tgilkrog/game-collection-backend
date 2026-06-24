@@ -9,6 +9,16 @@ use Illuminate\Http\Request;
 
 class GameCopyController extends Controller
 {
+    public function feed()
+    {
+        $copies = GameCopy::with(['game', 'platform', 'user'])
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        return GameCopyResource::collection($copies);
+    }
+
     /**
      * Display a listing of the resource.
      */

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ConditionController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\GameBaseController;
 use App\Http\Controllers\Api\GameCopyController;
 use App\Http\Controllers\Api\GenreController;
@@ -12,6 +13,8 @@ use Illuminate\Http\Request;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::get('/feed', [GameCopyController::class, 'feed']);
+Route::get('/users/{user}', [UserController::class, 'show']);
+Route::get('/users/{user}/game-copies', [UserController::class, 'gameCopies']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', fn(Request $request) => $request->user());

@@ -21,6 +21,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'avatar',
+        'banner',
     ];
 
     /**
@@ -38,6 +40,11 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
+    public function getRouteKeyName(): string
+    {
+        return 'name';
+    }
+
     public function gameCopies()
     {
         return $this->hasMany(GameCopy::class);

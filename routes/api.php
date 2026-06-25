@@ -11,6 +11,7 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
+Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::get('/feed', [GameCopyController::class, 'feed']);
 Route::get('/users/{user}', [UserController::class, 'show']);
@@ -18,6 +19,7 @@ Route::get('/users/{user}/game-copies', [UserController::class, 'gameCopies']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', fn(Request $request) => $request->user());
+    Route::put('/users/{user}', [UserController::class, 'update']);
 
     Route::apiResource('home', HomeController::class);
     Route::apiResource('genres', GenreController::class);

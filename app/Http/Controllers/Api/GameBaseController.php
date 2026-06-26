@@ -4,13 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\GameBaseResource;
-use App\Models\Condition;
 use App\Models\GameBase;
+use App\Services\IgdbService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class GameBaseController extends Controller
 {
+    public function __construct(private IgdbService $igdb) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -47,7 +49,7 @@ class GameBaseController extends Controller
             $game->genres()->sync($validated['genres']);
         }
 
-        return response()->json($game->load('genres'));
+        return response()->json($game->load(['genres', 'themes', 'gameModes', 'playerPerspectives']));
     }
 
     /**
@@ -57,6 +59,9 @@ class GameBaseController extends Controller
     {
         $gameBase->load([
             'genres',
+            'themes',
+            'gameModes',
+            'playerPerspectives',
             'game_copies' => fn($q) => $q->where('user_id', auth()->id())
                                           ->with(['parts.condition', 'platform']),
         ]);
@@ -95,7 +100,7 @@ class GameBaseController extends Controller
                 $gameBase->genres()->sync($validated['genres']);
             }
 
-            return response()->json($gameBase->load('genres'));
+            return response()->json($gameBase->load(['genres', 'themes', 'gameModes', 'playerPerspectives']));
     }
 
     /**
@@ -112,15 +117,24 @@ class GameBaseController extends Controller
     {
         $query = $request->get('q', '');
 
-        $games = GameBase::with('game_copies.platform')
-            ->where('title', 'like', "%{$query}%")
-            ->limit(10)
+        $local = GameBase::where('title', 'like', "%{$query}%")
+            ->limit(5)
             ->get()
-            ->map(function ($game) {
-                $game->cover_image = asset($game->cover_image);
-                return $game;
-            });
+            ->map(fn($game) => [
+                'source'       => 'local',
+                'id'           => $game->id,
+                'igdb_id'      => $game->igdb_id,
+                'title'        => $game->title,
+                'cover_image'  => $game->cover_image,
+                'release_year' => $game->release_year,
+            ]);
 
-        return response()->json($games);
+        $localIgdbIds = $local->pluck('igdb_id')->filter()->all();
+
+        $igdb = collect($this->igdb->search($query))
+            ->filter(fn($game) => !in_array($game['igdb_id'], $localIgdbIds))
+            ->values();
+
+        return response()->json($local->concat($igdb));
     }
 }

@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Genre extends Model
 {
     protected $fillable = [
+        'igdb_id',
         'name',
-        'slug'
+        'slug',
     ];
 
     public function games()

@@ -13,11 +13,12 @@ class UserController extends Controller
     public function show(User $user)
     {
         return response()->json([
-            'id'         => $user->id,
-            'name'       => $user->name,
-            'avatar'     => $user->avatar,
-            'banner'     => $user->banner,
-            'copy_count' => $user->gameCopies()->count(),
+            'id'              => $user->id,
+            'name'            => $user->name,
+            'avatar'          => $user->avatar,
+            'banner'          => $user->banner,
+            'banner_position' => $user->banner_position,
+            'copy_count'      => $user->gameCopies()->count(),
         ]);
     }
 
@@ -26,9 +27,10 @@ class UserController extends Controller
         abort_if($user->id !== auth()->id(), 403);
 
         $validated = $request->validate([
-            'name'   => 'sometimes|string|max:255|unique:users,name,' . $user->id,
-            'avatar' => 'sometimes|image|max:2048',
-            'banner' => 'sometimes|image|max:4096',
+            'name'            => 'sometimes|string|max:255|unique:users,name,' . $user->id,
+            'avatar'          => 'sometimes|image|max:2048',
+            'banner'          => 'sometimes|image|max:4096',
+            'banner_position' => 'sometimes|integer|min:0|max:100',
         ]);
 
         if ($request->hasFile('avatar')) {
@@ -45,13 +47,18 @@ class UserController extends Controller
             $validated['banner'] = '/storage/' . $request->file('banner')->store('banners', 'public');
         }
 
+        if ($request->has('banner_position')) {
+            $validated['banner_position'] = (int) $request->banner_position;
+        }
+
         $user->update($validated);
 
         return response()->json([
-            'id'     => $user->id,
-            'name'   => $user->name,
-            'avatar' => $user->avatar,
-            'banner' => $user->banner,
+            'id'              => $user->id,
+            'name'            => $user->name,
+            'avatar'          => $user->avatar,
+            'banner'          => $user->banner,
+            'banner_position' => $user->banner_position,
         ]);
     }
 

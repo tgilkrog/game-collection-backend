@@ -68,10 +68,11 @@ class GameCopyController extends Controller
             $igdbGenres = $igdbData['genres'] ?? [];
             unset($igdbData['genres']);
 
-            $gameBase = GameBase::firstOrCreate(
-                ['igdb_id' => $request->igdb_id],
-                $igdbData
-            );
+            $gameBase = GameBase::where('igdb_id', $request->igdb_id)->first()
+                ?? GameBase::firstOrCreate(
+                    ['title' => $igdbData['title']],
+                    $igdbData
+                );
 
             if ($gameBase->wasRecentlyCreated) {
                 if (!empty($igdbGenres)) {

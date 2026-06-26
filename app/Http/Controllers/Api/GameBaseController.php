@@ -130,9 +130,11 @@ class GameBaseController extends Controller
             ]);
 
         $localIgdbIds = $local->pluck('igdb_id')->filter()->all();
+        $localTitles  = $local->pluck('title')->map(fn($t) => strtolower($t))->all();
 
         $igdb = collect($this->igdb->search($query))
-            ->filter(fn($game) => !in_array($game['igdb_id'], $localIgdbIds))
+            ->filter(fn($game) => !in_array($game['igdb_id'], $localIgdbIds)
+                               && !in_array(strtolower($game['title']), $localTitles))
             ->values();
 
         return response()->json($local->concat($igdb));

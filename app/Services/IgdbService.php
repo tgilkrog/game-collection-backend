@@ -89,7 +89,7 @@ class IgdbService
                                 : null,
             'developer'    => $developer,
             'publisher'    => $publisher,
-            'description'  => $game['summary'] ?? null,
+            'description'  => isset($game['summary']) ? strip_tags($game['summary']) : null,
             'cover_image'  => $this->coverUrl($game['cover']['image_id'] ?? null),
             'genres'              => collect($game['genres'] ?? [])->map(fn($g) => ['id' => $g['id'], 'name' => $g['name']])->all(),
             'themes'              => collect($game['themes'] ?? [])->map(fn($t) => ['id' => $t['id'], 'name' => $t['name']])->all(),

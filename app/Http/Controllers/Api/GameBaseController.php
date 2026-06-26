@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\GameBaseListResource;
 use App\Http\Resources\GameBaseResource;
 use App\Models\GameBase;
 use App\Services\IgdbService;
@@ -18,9 +19,9 @@ class GameBaseController extends Controller
      */
     public function index()
     {
-        $gameBases = GameBase::orderBy('title')->get();
+        $gameBases = GameBase::orderBy('title')->paginate(24);
 
-        return GameBaseResource::collection($gameBases);
+        return GameBaseListResource::collection($gameBases);
     }
 
     /**
@@ -115,7 +116,8 @@ class GameBaseController extends Controller
 
     public function search(Request $request)
     {
-        $query = $request->get('q', '');
+        $query  = $request->get('q', '');
+        $source = $request->get('source');
 
         $local = GameBase::where('title', 'like', "%{$query}%")
             ->limit(5)
@@ -128,6 +130,10 @@ class GameBaseController extends Controller
                 'cover_image'  => $game->cover_image,
                 'release_year' => $game->release_year,
             ]);
+
+        if ($source === 'local') {
+            return response()->json($local->values());
+        }
 
         $localIgdbIds = $local->pluck('igdb_id')->filter()->all();
         $localTitles  = $local->pluck('title')->map(fn($t) => strtolower($t))->all();

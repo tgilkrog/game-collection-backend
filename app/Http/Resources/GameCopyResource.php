@@ -23,8 +23,6 @@ class GameCopyResource extends JsonResource
             'purchase_price' => $this->purchase_price,
             'purchase_date' => $this->purchase_date,
             'notes' => $this->notes,
-            'game_base_id' => $this->game_base_id,
-            'platform_id' => $this->platform_id,
             'game' => new GameBaseResource(
                 $this->whenLoaded('game')
             ),

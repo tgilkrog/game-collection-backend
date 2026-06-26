@@ -12,13 +12,15 @@ class UserController extends Controller
 {
     public function show(User $user)
     {
+        $user->loadCount('gameCopies');
+
         return response()->json([
             'id'              => $user->id,
             'name'            => $user->name,
             'avatar'          => $user->avatar,
             'banner'          => $user->banner,
             'banner_position' => $user->banner_position,
-            'copy_count'      => $user->gameCopies()->count(),
+            'copy_count'      => $user->game_copies_count,
         ]);
     }
 
@@ -67,7 +69,7 @@ class UserController extends Controller
         $copies = $user->gameCopies()
             ->with(['game', 'platform'])
             ->latest()
-            ->get();
+            ->paginate(24);
 
         return GameCopyResource::collection($copies);
     }

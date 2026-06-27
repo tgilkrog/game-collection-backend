@@ -68,7 +68,7 @@ class GameBaseController extends Controller
 
         $gameBase->load($relations);
 
-        $data = (new GameBaseResource($gameBase))->toArray(request());
+        $data = (new GameBaseResource($gameBase))->resolve();
         $data['is_wishlisted'] = $userId
             ? $gameBase->wishlists()->where('user_id', $userId)->exists()
             : false;

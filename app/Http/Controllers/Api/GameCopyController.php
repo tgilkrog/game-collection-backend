@@ -18,13 +18,16 @@ class GameCopyController extends Controller
 {
     public function __construct(private IgdbService $igdb) {}
 
-    public function feed()
+    public function feed(Request $request)
     {
-        $copies = GameCopy::with(['game', 'platform', 'user'])
-            ->latest()
-            ->paginate(10);
+        $query = GameCopy::with(['game', 'platform', 'user'])->latest();
 
-        return GameCopyResource::collection($copies);
+        if ($request->boolean('following') && auth()->check()) {
+            $followingIds = auth()->user()->following()->pluck('users.id');
+            $query->whereIn('user_id', $followingIds);
+        }
+
+        return GameCopyResource::collection($query->paginate(10));
     }
 
     /**

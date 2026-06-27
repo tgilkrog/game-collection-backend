@@ -115,6 +115,36 @@ class UserController extends Controller
         return response()->noContent();
     }
 
+    public function stats(User $user)
+    {
+        $copies = $user->gameCopies()->with(['platform', 'game.genres'])->get();
+
+        $byPlatform = $copies->groupBy('platform.name')
+            ->map(fn($group, $name) => [
+                'name'  => $name ?: 'Unknown',
+                'count' => $group->count(),
+                'value' => round($group->sum('purchase_price'), 2),
+            ])
+            ->sortByDesc('count')
+            ->values();
+
+        $byGenre = $copies->flatMap(fn($c) => $c->game?->genres ?? collect())
+            ->groupBy('name')
+            ->map(fn($g, $name) => ['name' => $name, 'count' => $g->count()])
+            ->sortByDesc('count')
+            ->take(8)
+            ->values();
+
+        $byDecade = $copies->groupBy(fn($c) => $c->game
+            ? (floor(($c->game->release_year ?? 0) / 10) * 10) . 's'
+            : 'Unknown'
+        )->map(fn($g, $decade) => ['decade' => $decade, 'count' => $g->count()])
+            ->sortBy('decade')
+            ->values();
+
+        return response()->json(compact('byPlatform', 'byGenre', 'byDecade'));
+    }
+
     public function gameCopies(User $user)
     {
         $copies = $user->gameCopies()

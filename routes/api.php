@@ -13,9 +13,12 @@ use Illuminate\Http\Request;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+Route::post('/logout', [AuthController::class, 'logout']);
 Route::get('/feed', [GameCopyController::class, 'feed']);
 Route::get('/users/{user}', [UserController::class, 'show']);
 Route::get('/users/{user}/game-copies', [UserController::class, 'gameCopies']);
+Route::get('/game-base/search', [GameBaseController::class, 'search'])->middleware('auth:sanctum');
+Route::get('/game-base/{gameBase}', [GameBaseController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', fn(Request $request) => $request->user());
@@ -24,8 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('home', HomeController::class);
     Route::apiResource('genres', GenreController::class);
 
-    Route::get('game-base/search', [GameBaseController::class, 'search']);
-    Route::apiResource('game-base', GameBaseController::class);
+    Route::apiResource('game-base', GameBaseController::class)->except(['show']);
 
     Route::apiResource('game-copies', GameCopyController::class);
     Route::apiResource('conditions', ConditionController::class);

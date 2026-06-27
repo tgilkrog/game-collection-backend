@@ -14,9 +14,9 @@ class ConditionController extends Controller
      */
     public function index()
     {
-        $genres = Condition::orderBy('id')->get();
+        $conditions = Condition::orderBy('id')->get();
 
-        return ConditionResource::collection($genres);
+        return ConditionResource::collection($conditions);
     }
 
     /**

@@ -14,6 +14,12 @@ class PlatformResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'id'           => $this->id,
+            'name'         => $this->name,
+            'alias'        => $this->alias,
+            'manufacturer' => $this->manufacturer,
+            'release_year' => $this->release_year,
+        ];
     }
 }

@@ -18,34 +18,34 @@ class AuthController extends Controller
 
         $user = User::create($validated);
 
-        $token = $user->createToken('react-app')->plainTextToken;
+        Auth::login($user);
+        $request->session()->regenerate();
 
-        return response()->json([
-            'user'  => $user,
-            'token' => $token,
-        ], 201);
+        return response()->json(['user' => $user], 201);
     }
 
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required',
         ]);
 
         if (!Auth::attempt($credentials)) {
-            return response()->json([
-                'message' => 'Invalid credentials'
-            ], 401);
+            return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        $user = Auth::user();
+        $request->session()->regenerate();
 
-        $token = $user->createToken('react-app')->plainTextToken;
+        return response()->json(['user' => Auth::user()]);
+    }
 
-        return response()->json([
-            'user' => $user,
-            'token' => $token
-        ]);
+    public function logout(Request $request)
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return response()->noContent();
     }
 }

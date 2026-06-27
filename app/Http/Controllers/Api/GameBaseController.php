@@ -58,14 +58,14 @@ class GameBaseController extends Controller
      */
     public function show(GameBase $gameBase)
     {
-        $gameBase->load([
-            'genres',
-            'themes',
-            'gameModes',
-            'playerPerspectives',
-            'game_copies' => fn($q) => $q->where('user_id', auth()->id())
-                                          ->with(['parts.condition', 'platform']),
-        ]);
+        $relations = ['genres', 'themes', 'gameModes', 'playerPerspectives'];
+
+        if ($userId = auth()->id()) {
+            $relations['game_copies'] = fn($q) => $q->where('user_id', $userId)
+                                                     ->with(['parts.condition', 'platform']);
+        }
+
+        $gameBase->load($relations);
 
         return new GameBaseResource($gameBase);
     }

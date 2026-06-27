@@ -11,15 +11,23 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
+// Public auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::post('/logout', [AuthController::class, 'logout']);
+
+// Public read routes
 Route::get('/feed', [GameCopyController::class, 'feed']);
 Route::get('/users/{user}', [UserController::class, 'show']);
 Route::get('/users/{user}/game-copies', [UserController::class, 'gameCopies']);
+Route::get('/game-copies', [GameCopyController::class, 'index']);
+Route::get('/game-copies/{gameCopy}', [GameCopyController::class, 'show']);
+Route::get('/conditions', [ConditionController::class, 'index']);
+Route::get('/game-base', [GameBaseController::class, 'index']);
 Route::get('/game-base/search', [GameBaseController::class, 'search'])->middleware('auth:sanctum');
 Route::get('/game-base/{gameBase}', [GameBaseController::class, 'show']);
 
+// Auth-protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', fn(Request $request) => $request->user());
     Route::put('/users/{user}', [UserController::class, 'update']);
@@ -27,9 +35,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('home', HomeController::class);
     Route::apiResource('genres', GenreController::class);
 
-    Route::apiResource('game-base', GameBaseController::class)->except(['show']);
+    Route::post('/game-base', [GameBaseController::class, 'store']);
+    Route::put('/game-base/{gameBase}', [GameBaseController::class, 'update']);
+    Route::delete('/game-base/{gameBase}', [GameBaseController::class, 'destroy']);
 
-    Route::apiResource('game-copies', GameCopyController::class);
-    Route::apiResource('conditions', ConditionController::class);
+    Route::post('/game-copies', [GameCopyController::class, 'store']);
+    Route::put('/game-copies/{gameCopy}', [GameCopyController::class, 'update']);
+    Route::delete('/game-copies/{gameCopy}', [GameCopyController::class, 'destroy']);
+
+    Route::apiResource('conditions', ConditionController::class)->except(['index']);
     Route::apiResource('platforms', PlatformController::class);
 });

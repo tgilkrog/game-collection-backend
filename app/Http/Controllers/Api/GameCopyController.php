@@ -32,9 +32,8 @@ class GameCopyController extends Controller
      */
     public function index()
     {
-        $gameCopies = GameCopy::where('user_id', auth()->id())
-            ->with(['game', 'platform', 'parts.condition'])
-            ->orderBy('created_at', 'desc')
+        $gameCopies = GameCopy::with(['game', 'platform', 'user'])
+            ->latest()
             ->paginate(24);
 
         return GameCopyResource::collection($gameCopies);
@@ -134,9 +133,15 @@ class GameCopyController extends Controller
      */
     public function show(GameCopy $gameCopy)
     {
-        abort_if($gameCopy->user_id !== auth()->id(), 403);
-
-        $gameCopy->load(['game', 'platform', 'parts.condition']);
+        $gameCopy->load([
+            'game.genres',
+            'game.themes',
+            'game.gameModes',
+            'game.playerPerspectives',
+            'platform',
+            'parts.condition',
+            'user',
+        ]);
         return new GameCopyResource($gameCopy);
     }
 

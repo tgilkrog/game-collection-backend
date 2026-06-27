@@ -59,15 +59,21 @@ class GameBaseController extends Controller
     public function show(GameBase $gameBase)
     {
         $relations = ['genres', 'themes', 'gameModes', 'playerPerspectives'];
+        $userId = auth()->id();
 
-        if ($userId = auth()->id()) {
+        if ($userId) {
             $relations['game_copies'] = fn($q) => $q->where('user_id', $userId)
                                                      ->with(['parts.condition', 'platform']);
         }
 
         $gameBase->load($relations);
 
-        return new GameBaseResource($gameBase);
+        $data = (new GameBaseResource($gameBase))->toArray(request());
+        $data['is_wishlisted'] = $userId
+            ? $gameBase->wishlists()->where('user_id', $userId)->exists()
+            : false;
+
+        return response()->json($data);
     }
 
     /**

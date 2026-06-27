@@ -30,6 +30,11 @@ class GameBase extends Model
         return $this->hasMany(GameCopy::class);
     }
 
+    public function wishlists()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
     public function genres()
     {
         return $this->belongsToMany(Genre::class, 'game_genre', 'game_base_id', 'genre_id');

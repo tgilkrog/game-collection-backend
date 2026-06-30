@@ -20,6 +20,7 @@ class PlatformResource extends JsonResource
             'alias'        => $this->alias,
             'manufacturer' => $this->manufacturer,
             'release_year' => $this->release_year,
+            'copy_count'   => $this->copies_count ?? 0,
         ];
     }
 }

@@ -33,13 +33,15 @@ class GameCopyController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $gameCopies = GameCopy::with(['game', 'platform', 'user'])
-            ->latest()
-            ->paginate(24);
+        $query = GameCopy::with(['game', 'platform', 'user'])->latest();
 
-        return GameCopyResource::collection($gameCopies);
+        if ($request->filled('platform_id')) {
+            $query->where('platform_id', $request->integer('platform_id'));
+        }
+
+        return GameCopyResource::collection($query->paginate(24));
     }
 
     /**
@@ -154,6 +156,28 @@ class GameCopyController extends Controller
     public function update(Request $request, GameCopy $gameCopy)
     {
         abort_if($gameCopy->user_id !== auth()->id(), 403);
+
+        $validated = $request->validate([
+            'platform_id'          => 'required|exists:platforms,id',
+            'title'                => 'nullable|string',
+            'region'               => 'nullable|string',
+            'purchase_price'       => 'nullable|numeric',
+            'purchase_date'        => 'nullable|date',
+            'notes'                => 'nullable|string',
+            'parts'                => 'array',
+            'parts.*.type'         => 'required|string',
+            'parts.*.condition_id' => 'required|exists:conditions,id',
+            'parts.*.notes'        => 'nullable|string',
+        ]);
+
+        $gameCopy->update($validated);
+
+        if (array_key_exists('parts', $validated)) {
+            $gameCopy->parts()->delete();
+            $gameCopy->parts()->createMany($validated['parts']);
+        }
+
+        return new GameCopyResource($gameCopy->load(['game', 'platform', 'parts.condition']));
     }
 
     /**
@@ -162,5 +186,7 @@ class GameCopyController extends Controller
     public function destroy(GameCopy $gameCopy)
     {
         abort_if($gameCopy->user_id !== auth()->id(), 403);
+        $gameCopy->delete();
+        return response()->noContent();
     }
 }

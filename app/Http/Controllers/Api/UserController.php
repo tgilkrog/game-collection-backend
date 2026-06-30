@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\GameCopyResource;
 use App\Models\User;
+use App\Support\UserRank;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -25,6 +26,7 @@ class UserController extends Controller
                 'name'       => $u->name,
                 'avatar'     => $u->avatar,
                 'copy_count' => $u->copy_count,
+                'rank'       => UserRank::fromCount($u->copy_count),
             ]),
             'meta' => [
                 'total'        => $users->total(),
@@ -51,11 +53,13 @@ class UserController extends Controller
             'banner_position' => $user->banner_position,
             'bio'             => $user->bio,
             'copy_count'      => $user->game_copies_count,
+            'wishlist_count'  => $user->wishlist()->count(),
             'total_value'     => (float) $user->gameCopies()->sum('purchase_price'),
             'platform_count'  => $user->gameCopies()->distinct('platform_id')->count('platform_id'),
             'followers_count' => $user->followers()->count(),
             'following_count' => $user->following()->count(),
             'is_following'    => $isFollowing,
+            'rank'            => UserRank::fromCount($user->game_copies_count),
         ]);
     }
 
@@ -149,7 +153,7 @@ class UserController extends Controller
     {
         $copies = $user->gameCopies()
             ->with(['game', 'platform'])
-            ->latest()
+            ->orderBy('purchase_date', 'desc')
             ->paginate(24);
 
         return GameCopyResource::collection($copies);

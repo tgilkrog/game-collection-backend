@@ -14,7 +14,9 @@ class PlatformController extends Controller
      */
     public function index()
     {
-        $platforms = Platform::orderBy('name')->get();
+        $platforms = Platform::withCount('copies')
+            ->orderBy('name')
+            ->get();
 
         return PlatformResource::collection($platforms);
     }

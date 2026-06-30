@@ -28,8 +28,9 @@ Route::get('/users/{user}/stats', [UserController::class, 'stats']);
 Route::get('/game-copies', [GameCopyController::class, 'index']);
 Route::get('/game-copies/{gameCopy}', [GameCopyController::class, 'show']);
 Route::get('/conditions', [ConditionController::class, 'index']);
+Route::get('/platforms', [PlatformController::class, 'index']);
 Route::get('/game-base', [GameBaseController::class, 'index']);
-Route::get('/game-base/search', [GameBaseController::class, 'search'])->middleware('auth:sanctum');
+Route::get('/game-base/search', [GameBaseController::class, 'search']);
 Route::get('/game-base/{gameBase}', [GameBaseController::class, 'show']);
 
 // Auth-protected routes
@@ -55,5 +56,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/wishlist/{gameBase}', [WishlistController::class, 'destroy']);
 
     Route::apiResource('conditions', ConditionController::class)->except(['index']);
-    Route::apiResource('platforms', PlatformController::class);
+    Route::apiResource('platforms', PlatformController::class)->except(['index']);
 });

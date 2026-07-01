@@ -13,8 +13,8 @@ class IgdbService
 
     public function __construct()
     {
-        $this->clientId     = env('IGDB_CLIENT_ID');
-        $this->clientSecret = env('IGDB_CLIENT_SECRET');
+        $this->clientId     = config('services.igdb.client_id');
+        $this->clientSecret = config('services.igdb.client_secret');
     }
 
     private function token(): string
@@ -49,9 +49,10 @@ class IgdbService
 
     public function search(string $query): array
     {
+        $safeQuery = str_replace('"', '\\"', $query);
         $games = $this->query(
             'games',
-            "search \"{$query}\"; fields id,name,cover.image_id,first_release_date,platforms.abbreviation; limit 10;"
+            "search \"{$safeQuery}\"; fields id,name,cover.image_id,first_release_date,platforms.abbreviation; limit 10;"
         );
 
         return collect($games)->map(fn($game) => [

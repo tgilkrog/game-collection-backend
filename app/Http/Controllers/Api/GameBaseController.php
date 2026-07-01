@@ -30,13 +30,13 @@ class GameBaseController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title' => 'required|string',
+            'title'       => 'required|string|max:255',
             'release_year' => 'required|integer',
-            'publisher' => 'nullable|string',
-            'developer' => 'nullable|string',
-            'description' => 'nullable|string',
+            'publisher'   => 'nullable|string|max:255',
+            'developer'   => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:5000',
             'cover_image' => 'nullable|image',
-            'genres' => 'array'
+            'genres'      => 'array'
         ]);
 
         if ($request->hasFile('cover_image')) {
@@ -82,13 +82,13 @@ class GameBaseController extends Controller
     public function update(Request $request, GameBase $gameBase)
     {
             $validated = $request->validate([
-                'title' => 'required|string',
+                'title'       => 'required|string|max:255',
                 'release_year' => 'required|integer',
-                'publisher' => 'nullable|string',
-                'developer' => 'nullable|string',
-                'description' => 'nullable|string',
+                'publisher'   => 'nullable|string|max:255',
+                'developer'   => 'nullable|string|max:255',
+                'description' => 'nullable|string|max:5000',
                 'cover_image' => 'nullable|image',
-                'genres' => 'array'
+                'genres'      => 'array'
             ]);
 
             if ($request->hasFile('cover_image')) {
@@ -115,6 +115,8 @@ class GameBaseController extends Controller
      */
     public function destroy(GameBase $gameBase)
     {
+        abort_if($gameBase->game_copies()->exists(), 409, 'Cannot delete a game that has copies in the collection.');
+
         $gameBase->delete();
 
         return response()->noContent();

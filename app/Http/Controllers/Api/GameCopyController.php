@@ -50,20 +50,20 @@ class GameCopyController extends Controller
     public function store(Request $request)
     {
          $validated = $request->validate([
-            'title'        => 'nullable|string',
+            'title'        => 'nullable|string|max:255',
             'game_base_id' => 'required_without:igdb_id|exists:game_bases,id',
             'igdb_id'      => 'required_without:game_base_id|integer',
             'platform_id'  => 'required|exists:platforms,id',
-            'region'       => 'nullable|string',
+            'region'       => 'nullable|string|max:255',
             'purchase_price' => 'nullable|numeric',
             'purchase_date'  => 'nullable|date',
-            'notes'          => 'nullable|string',
+            'notes'          => 'nullable|string|max:2000',
 
             // nested parts
             'parts'               => 'array',
-            'parts.*.type'        => 'required|string',
+            'parts.*.type'        => 'required|string|max:100',
             'parts.*.condition_id' => 'required|exists:conditions,id',
-            'parts.*.notes'       => 'nullable|string',
+            'parts.*.notes'       => 'nullable|string|max:500',
         ]);
 
         if ($request->filled('igdb_id')) {
@@ -159,15 +159,15 @@ class GameCopyController extends Controller
 
         $validated = $request->validate([
             'platform_id'          => 'required|exists:platforms,id',
-            'title'                => 'nullable|string',
-            'region'               => 'nullable|string',
+            'title'                => 'nullable|string|max:255',
+            'region'               => 'nullable|string|max:255',
             'purchase_price'       => 'nullable|numeric',
             'purchase_date'        => 'nullable|date',
-            'notes'                => 'nullable|string',
+            'notes'                => 'nullable|string|max:2000',
             'parts'                => 'array',
-            'parts.*.type'         => 'required|string',
+            'parts.*.type'         => 'required|string|max:100',
             'parts.*.condition_id' => 'required|exists:conditions,id',
-            'parts.*.notes'        => 'nullable|string',
+            'parts.*.notes'        => 'nullable|string|max:500',
         ]);
 
         $gameCopy->update($validated);

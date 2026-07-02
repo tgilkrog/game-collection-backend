@@ -11,6 +11,7 @@ class ConditionController extends Controller
 {
     /**
      * Display a listing of the resource.
+     * test for auto deploy
      */
     public function index()
     {

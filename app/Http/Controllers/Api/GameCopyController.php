@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exports\GameCopiesExport;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\GameCopyResource;
 use App\Models\GameBase;
@@ -13,6 +14,8 @@ use App\Models\Theme;
 use App\Services\IgdbService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Excel as ExcelFormat;
+use Maatwebsite\Excel\Facades\Excel;
 
 class GameCopyController extends Controller
 {
@@ -188,5 +191,26 @@ class GameCopyController extends Controller
         abort_if($gameCopy->user_id !== auth()->id(), 403);
         $gameCopy->delete();
         return response()->noContent();
+    }
+
+    public function export(Request $request)
+    {
+        $validated = $request->validate([
+            'format'    => 'required|in:xlsx,csv',
+            'columns'   => 'required|array|min:1',
+            'columns.*' => 'in:' . implode(',', array_keys(GameCopiesExport::COLUMNS)),
+        ]);
+
+        $copies = GameCopy::where('user_id', auth()->id())
+            ->with(['game', 'platform', 'parts.condition'])
+            ->get();
+
+        $writerType = $validated['format'] === 'csv' ? ExcelFormat::CSV : ExcelFormat::XLSX;
+
+        return Excel::download(
+            new GameCopiesExport($copies, $validated['columns']),
+            "collection.{$validated['format']}",
+            $writerType
+        );
     }
 }

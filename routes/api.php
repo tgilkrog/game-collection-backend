@@ -26,6 +26,7 @@ Route::get('/users/{user}/game-copies', [UserController::class, 'gameCopies']);
 Route::get('/users/{user}/wishlist', [WishlistController::class, 'index']);
 Route::get('/users/{user}/stats', [UserController::class, 'stats']);
 Route::get('/game-copies', [GameCopyController::class, 'index']);
+Route::get('/game-copies/export', [GameCopyController::class, 'export'])->middleware('auth:sanctum');
 Route::get('/game-copies/{gameCopy}', [GameCopyController::class, 'show']);
 Route::get('/conditions', [ConditionController::class, 'index']);
 Route::get('/platforms', [PlatformController::class, 'index']);

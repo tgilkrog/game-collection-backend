@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\BarcodeLookupController;
 use App\Http\Controllers\Api\ConditionController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\UserController;
@@ -52,6 +53,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/game-copies', [GameCopyController::class, 'store']);
     Route::put('/game-copies/{gameCopy}', [GameCopyController::class, 'update']);
     Route::delete('/game-copies/{gameCopy}', [GameCopyController::class, 'destroy']);
+
+    Route::get('/barcode-lookup', [BarcodeLookupController::class, 'show'])->middleware('throttle:20,1');
 
     Route::post('/wishlist', [WishlistController::class, 'store']);
     Route::delete('/wishlist/{gameBase}', [WishlistController::class, 'destroy']);

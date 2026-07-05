@@ -40,4 +40,8 @@ return [
         'client_secret' => env('IGDB_CLIENT_SECRET'),
     ],
 
+    'upcitemdb' => [
+        'key' => env('UPCITEMDB_API_KEY'),
+    ],
+
 ];

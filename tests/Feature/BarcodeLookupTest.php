@@ -40,6 +40,60 @@ class BarcodeLookupTest extends TestCase
         $response->assertJsonPath('result.barcode', '012345678905');
     }
 
+    public function test_trailing_platform_suffix_is_stripped_from_title(): void
+    {
+        Http::fake([
+            'api.upcitemdb.com/*' => Http::response([
+                'items' => [[
+                    'title' => 'Infamous - Playstation 3',
+                ]],
+            ], 200),
+        ]);
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->getJson('/api/barcode-lookup?barcode=012345678905');
+
+        $response->assertOk();
+        $response->assertJsonPath('result.title', 'Infamous');
+    }
+
+    public function test_leading_and_trailing_platform_noise_is_stripped_from_title(): void
+    {
+        Http::fake([
+            'api.upcitemdb.com/*' => Http::response([
+                'items' => [[
+                    'title' => 'ps2 Biker mice from mars - sony playstation 2',
+                ]],
+            ], 200),
+        ]);
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->getJson('/api/barcode-lookup?barcode=012345678905');
+
+        $response->assertOk();
+        $response->assertJsonPath('result.title', 'Biker mice from mars');
+    }
+
+    public function test_legitimate_subtitle_with_a_hyphen_is_not_stripped(): void
+    {
+        Http::fake([
+            'api.upcitemdb.com/*' => Http::response([
+                'items' => [[
+                    'title' => 'Mass Effect - Legendary Edition',
+                ]],
+            ], 200),
+        ]);
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->getJson('/api/barcode-lookup?barcode=012345678905');
+
+        $response->assertOk();
+        $response->assertJsonPath('result.title', 'Mass Effect - Legendary Edition');
+    }
+
     public function test_not_found_barcode_returns_matched_false_not_an_error(): void
     {
         Http::fake([

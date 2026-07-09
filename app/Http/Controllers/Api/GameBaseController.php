@@ -17,9 +17,36 @@ class GameBaseController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $gameBases = GameBase::orderBy('title')->paginate(24);
+        $query = GameBase::query();
+
+        if ($request->filled('genre_id')) {
+            $ids = (array) $request->input('genre_id');
+            $query->whereHas('genres', fn($q) => $q->whereIn('genres.id', $ids));
+        }
+
+        if ($request->filled('theme_id')) {
+            $ids = (array) $request->input('theme_id');
+            $query->whereHas('themes', fn($q) => $q->whereIn('themes.id', $ids));
+        }
+
+        if ($request->filled('game_mode_id')) {
+            $ids = (array) $request->input('game_mode_id');
+            $query->whereHas('gameModes', fn($q) => $q->whereIn('game_modes.id', $ids));
+        }
+
+        if ($request->filled('player_perspective_id')) {
+            $ids = (array) $request->input('player_perspective_id');
+            $query->whereHas('playerPerspectives', fn($q) => $q->whereIn('player_perspectives.id', $ids));
+        }
+
+        if ($request->filled('platform_id')) {
+            $ids = (array) $request->input('platform_id');
+            $query->whereHas('game_copies', fn($q) => $q->whereIn('game_copies.platform_id', $ids));
+        }
+
+        $gameBases = $query->orderBy('title')->paginate(24)->withQueryString();
 
         return GameBaseListResource::collection($gameBases);
     }

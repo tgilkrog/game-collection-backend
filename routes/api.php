@@ -3,6 +3,9 @@
 use App\Http\Controllers\Api\BarcodeLookupController;
 use App\Http\Controllers\Api\ConditionController;
 use App\Http\Controllers\Api\FollowController;
+use App\Http\Controllers\Api\GameModeController;
+use App\Http\Controllers\Api\PlayerPerspectiveController;
+use App\Http\Controllers\Api\ThemeController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\GameBaseController;
 use App\Http\Controllers\Api\GameCopyController;
@@ -31,6 +34,10 @@ Route::get('/game-copies/export', [GameCopyController::class, 'export'])->middle
 Route::get('/game-copies/{gameCopy}', [GameCopyController::class, 'show']);
 Route::get('/conditions', [ConditionController::class, 'index']);
 Route::get('/platforms', [PlatformController::class, 'index']);
+Route::get('/genres', [GenreController::class, 'index']);
+Route::get('/themes', [ThemeController::class, 'index']);
+Route::get('/game-modes', [GameModeController::class, 'index']);
+Route::get('/player-perspectives', [PlayerPerspectiveController::class, 'index']);
 Route::get('/game-base', [GameBaseController::class, 'index']);
 Route::get('/game-base/search', [GameBaseController::class, 'search']);
 Route::get('/game-base/{gameBase}', [GameBaseController::class, 'show']);
@@ -44,7 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/users/{user}/follow', [FollowController::class, 'destroy']);
 
     Route::apiResource('home', HomeController::class);
-    Route::apiResource('genres', GenreController::class);
+    Route::apiResource('genres', GenreController::class)->except(['index']);
 
     Route::post('/game-base', [GameBaseController::class, 'store']);
     Route::put('/game-base/{gameBase}', [GameBaseController::class, 'update']);

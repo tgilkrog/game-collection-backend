@@ -41,10 +41,35 @@ class GameCopyController extends Controller
         $query = GameCopy::with(['game', 'platform', 'user'])->latest();
 
         if ($request->filled('platform_id')) {
-            $query->where('platform_id', $request->integer('platform_id'));
+            $query->whereIn('platform_id', (array) $request->input('platform_id'));
         }
 
-        return GameCopyResource::collection($query->paginate(24));
+        if ($request->filled('condition_id')) {
+            $ids = (array) $request->input('condition_id');
+            $query->whereHas('parts', fn($q) => $q->whereIn('condition_id', $ids));
+        }
+
+        if ($request->filled('genre_id')) {
+            $ids = (array) $request->input('genre_id');
+            $query->whereHas('game.genres', fn($q) => $q->whereIn('genres.id', $ids));
+        }
+
+        if ($request->filled('theme_id')) {
+            $ids = (array) $request->input('theme_id');
+            $query->whereHas('game.themes', fn($q) => $q->whereIn('themes.id', $ids));
+        }
+
+        if ($request->filled('game_mode_id')) {
+            $ids = (array) $request->input('game_mode_id');
+            $query->whereHas('game.gameModes', fn($q) => $q->whereIn('game_modes.id', $ids));
+        }
+
+        if ($request->filled('player_perspective_id')) {
+            $ids = (array) $request->input('player_perspective_id');
+            $query->whereHas('game.playerPerspectives', fn($q) => $q->whereIn('player_perspectives.id', $ids));
+        }
+
+        return GameCopyResource::collection($query->paginate(24)->withQueryString());
     }
 
     /**

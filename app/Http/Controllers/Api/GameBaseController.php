@@ -23,27 +23,27 @@ class GameBaseController extends Controller
 
         if ($request->filled('genre_id')) {
             $ids = (array) $request->input('genre_id');
-            $query->whereHas('genres', fn($q) => $q->whereIn('genres.id', $ids));
+            $query->whereHas('genres', fn ($q) => $q->whereIn('genres.id', $ids));
         }
 
         if ($request->filled('theme_id')) {
             $ids = (array) $request->input('theme_id');
-            $query->whereHas('themes', fn($q) => $q->whereIn('themes.id', $ids));
+            $query->whereHas('themes', fn ($q) => $q->whereIn('themes.id', $ids));
         }
 
         if ($request->filled('game_mode_id')) {
             $ids = (array) $request->input('game_mode_id');
-            $query->whereHas('gameModes', fn($q) => $q->whereIn('game_modes.id', $ids));
+            $query->whereHas('gameModes', fn ($q) => $q->whereIn('game_modes.id', $ids));
         }
 
         if ($request->filled('player_perspective_id')) {
             $ids = (array) $request->input('player_perspective_id');
-            $query->whereHas('playerPerspectives', fn($q) => $q->whereIn('player_perspectives.id', $ids));
+            $query->whereHas('playerPerspectives', fn ($q) => $q->whereIn('player_perspectives.id', $ids));
         }
 
         if ($request->filled('platform_id')) {
             $ids = (array) $request->input('platform_id');
-            $query->whereHas('game_copies', fn($q) => $q->whereIn('game_copies.platform_id', $ids));
+            $query->whereHas('game_copies', fn ($q) => $q->whereIn('game_copies.platform_id', $ids));
         }
 
         $gameBases = $query->orderBy('title')->paginate(24)->withQueryString();
@@ -57,24 +57,36 @@ class GameBaseController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title'       => 'required|string|max:255',
+            'title' => 'required|string|max:255',
             'release_year' => 'required|integer',
-            'publisher'   => 'nullable|string|max:255',
-            'developer'   => 'nullable|string|max:255',
+            'publisher' => 'nullable|string|max:255',
+            'developer' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:5000',
             'cover_image' => 'nullable|image',
-            'genres'      => 'array'
+            'genres' => 'array',
+            'themes' => 'array',
+            'game_modes' => 'array',
+            'player_perspectives' => 'array',
         ]);
 
         if ($request->hasFile('cover_image')) {
             $path = $request->file('cover_image')->store('covers', 'public');
-            $validated['cover_image'] = '/storage/' . $path;
+            $validated['cover_image'] = '/storage/'.$path;
         }
 
         $game = GameBase::create($validated);
 
-        if (!empty($validated['genres'])) {
+        if (! empty($validated['genres'])) {
             $game->genres()->sync($validated['genres']);
+        }
+        if (! empty($validated['themes'])) {
+            $game->themes()->sync($validated['themes']);
+        }
+        if (! empty($validated['game_modes'])) {
+            $game->gameModes()->sync($validated['game_modes']);
+        }
+        if (! empty($validated['player_perspectives'])) {
+            $game->playerPerspectives()->sync($validated['player_perspectives']);
         }
 
         return response()->json($game->load(['genres', 'themes', 'gameModes', 'playerPerspectives']));
@@ -89,8 +101,8 @@ class GameBaseController extends Controller
         $userId = auth()->id();
 
         if ($userId) {
-            $relations['game_copies'] = fn($q) => $q->where('user_id', $userId)
-                                                     ->with(['parts.condition', 'platform']);
+            $relations['game_copies'] = fn ($q) => $q->where('user_id', $userId)
+                ->with(['parts.condition', 'platform']);
         }
 
         $gameBase->load($relations);
@@ -108,33 +120,45 @@ class GameBaseController extends Controller
      */
     public function update(Request $request, GameBase $gameBase)
     {
-            $validated = $request->validate([
-                'title'       => 'required|string|max:255',
-                'release_year' => 'required|integer',
-                'publisher'   => 'nullable|string|max:255',
-                'developer'   => 'nullable|string|max:255',
-                'description' => 'nullable|string|max:5000',
-                'cover_image' => 'nullable|image',
-                'genres'      => 'array'
-            ]);
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'release_year' => 'required|integer',
+            'publisher' => 'nullable|string|max:255',
+            'developer' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:5000',
+            'cover_image' => 'nullable|image',
+            'genres' => 'array',
+            'themes' => 'array',
+            'game_modes' => 'array',
+            'player_perspectives' => 'array',
+        ]);
 
-            if ($request->hasFile('cover_image')) {
-                if ($gameBase->cover_image) {
-                    $oldPath = str_replace('/storage/', '', $gameBase->cover_image);
-                    Storage::disk('public')->delete($oldPath);
-                }
-
-                $path = $request->file('cover_image')->store('covers', 'public');
-                $validated['cover_image'] = '/storage/' . $path;
+        if ($request->hasFile('cover_image')) {
+            if ($gameBase->cover_image) {
+                $oldPath = str_replace('/storage/', '', $gameBase->cover_image);
+                Storage::disk('public')->delete($oldPath);
             }
 
-            $gameBase->update($validated);
+            $path = $request->file('cover_image')->store('covers', 'public');
+            $validated['cover_image'] = '/storage/'.$path;
+        }
 
-            if (isset($validated['genres'])) {
-                $gameBase->genres()->sync($validated['genres']);
-            }
+        $gameBase->update($validated);
 
-            return response()->json($gameBase->load(['genres', 'themes', 'gameModes', 'playerPerspectives']));
+        if (isset($validated['genres'])) {
+            $gameBase->genres()->sync($validated['genres']);
+        }
+        if (isset($validated['themes'])) {
+            $gameBase->themes()->sync($validated['themes']);
+        }
+        if (isset($validated['game_modes'])) {
+            $gameBase->gameModes()->sync($validated['game_modes']);
+        }
+        if (isset($validated['player_perspectives'])) {
+            $gameBase->playerPerspectives()->sync($validated['player_perspectives']);
+        }
+
+        return response()->json($gameBase->load(['genres', 'themes', 'gameModes', 'playerPerspectives']));
     }
 
     /**
@@ -151,18 +175,18 @@ class GameBaseController extends Controller
 
     public function search(Request $request)
     {
-        $query  = $request->get('q', '');
+        $query = $request->get('q', '');
         $source = $request->get('source');
 
         $local = GameBase::where('title', 'like', "%{$query}%")
             ->limit(5)
             ->get()
-            ->map(fn($game) => [
-                'source'       => 'local',
-                'id'           => $game->id,
-                'igdb_id'      => $game->igdb_id,
-                'title'        => $game->title,
-                'cover_image'  => $game->cover_image,
+            ->map(fn ($game) => [
+                'source' => 'local',
+                'id' => $game->id,
+                'igdb_id' => $game->igdb_id,
+                'title' => $game->title,
+                'cover_image' => $game->cover_image,
                 'release_year' => $game->release_year,
             ]);
 
@@ -171,11 +195,11 @@ class GameBaseController extends Controller
         }
 
         $localIgdbIds = $local->pluck('igdb_id')->filter()->all();
-        $localTitles  = $local->pluck('title')->map(fn($t) => strtolower($t))->all();
+        $localTitles = $local->pluck('title')->map(fn ($t) => strtolower($t))->all();
 
         $igdb = collect($this->igdb->search($query))
-            ->filter(fn($game) => !in_array($game['igdb_id'], $localIgdbIds)
-                               && !in_array(strtolower($game['title']), $localTitles))
+            ->filter(fn ($game) => ! in_array($game['igdb_id'], $localIgdbIds)
+                               && ! in_array(strtolower($game['title']), $localTitles))
             ->values();
 
         return response()->json($local->concat($igdb));

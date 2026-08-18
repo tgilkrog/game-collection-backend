@@ -3,19 +3,19 @@
 use App\Http\Controllers\Api\BarcodeLookupController;
 use App\Http\Controllers\Api\ConditionController;
 use App\Http\Controllers\Api\FollowController;
-use App\Http\Controllers\Api\GameModeController;
-use App\Http\Controllers\Api\PlayerPerspectiveController;
-use App\Http\Controllers\Api\ThemeController;
-use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\GameBaseController;
 use App\Http\Controllers\Api\GameCopyController;
+use App\Http\Controllers\Api\GameModeController;
 use App\Http\Controllers\Api\GenreController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\PlatformController;
+use App\Http\Controllers\Api\PlayerPerspectiveController;
+use App\Http\Controllers\Api\ThemeController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\WishlistController;
 use App\Http\Controllers\AuthController;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 // Public auth routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -44,7 +44,7 @@ Route::get('/game-base/{gameBase}', [GameBaseController::class, 'show']);
 
 // Auth-protected routes
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/me', fn(Request $request) => $request->user());
+    Route::get('/me', fn (Request $request) => $request->user());
     Route::put('/users/{user}', [UserController::class, 'update']);
     Route::put('/users/{user}/password', [UserController::class, 'changePassword']);
     Route::post('/users/{user}/follow', [FollowController::class, 'store']);
@@ -53,9 +53,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('home', HomeController::class);
     Route::apiResource('genres', GenreController::class)->except(['index']);
 
-    Route::post('/game-base', [GameBaseController::class, 'store']);
-    Route::put('/game-base/{gameBase}', [GameBaseController::class, 'update']);
-    Route::delete('/game-base/{gameBase}', [GameBaseController::class, 'destroy']);
+    Route::post('/game-base', [GameBaseController::class, 'store'])->middleware('admin');
+    Route::put('/game-base/{gameBase}', [GameBaseController::class, 'update'])->middleware('admin');
+    Route::delete('/game-base/{gameBase}', [GameBaseController::class, 'destroy'])->middleware('admin');
 
     Route::post('/game-copies', [GameCopyController::class, 'store']);
     Route::put('/game-copies/{gameCopy}', [GameCopyController::class, 'update']);

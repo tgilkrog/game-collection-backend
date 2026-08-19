@@ -26,30 +26,44 @@ class PlatformController extends Controller
      */
     public function store(Request $request)
     {
-        //
-    }
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'alias' => 'nullable|string|max:255',
+            'manufacturer' => 'nullable|string|max:255',
+            'release_year' => 'nullable|integer',
+        ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
+        $platform = Platform::create($validated);
+
+        return new PlatformResource($platform->loadCount('copies'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Platform $platform)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'alias' => 'nullable|string|max:255',
+            'manufacturer' => 'nullable|string|max:255',
+            'release_year' => 'nullable|integer',
+        ]);
+
+        $platform->update($validated);
+
+        return new PlatformResource($platform->loadCount('copies'));
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Platform $platform)
     {
-        //
+        abort_if($platform->copies()->exists(), 409, 'Cannot delete a platform that has copies in the collection.');
+
+        $platform->delete();
+
+        return response()->noContent();
     }
 }

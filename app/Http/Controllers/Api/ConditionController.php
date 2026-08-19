@@ -25,30 +25,38 @@ class ConditionController extends Controller
      */
     public function store(Request $request)
     {
-        //
-    }
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
+        $condition = Condition::create($validated);
+
+        return new ConditionResource($condition);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Condition $condition)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+        ]);
+
+        $condition->update($validated);
+
+        return new ConditionResource($condition);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Condition $condition)
     {
-        //
+        abort_if($condition->copyParts()->exists(), 409, 'Cannot delete a condition that is currently assigned to collection items.');
+
+        $condition->delete();
+
+        return response()->noContent();
     }
 }

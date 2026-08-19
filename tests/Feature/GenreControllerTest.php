@@ -11,6 +11,14 @@ class GenreControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function admin(): User
+    {
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->save();
+
+        return $admin;
+    }
+
     public function test_index_no_longer_requires_authentication(): void
     {
         Genre::create(['name' => 'RPG', 'slug' => 'rpg']);
@@ -46,11 +54,22 @@ class GenreControllerTest extends TestCase
         $response->assertStatus(401);
     }
 
-    public function test_authenticated_user_can_still_write(): void
+    public function test_non_admin_authenticated_user_cannot_write(): void
     {
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->postJson('/api/genres', [
+            'name' => 'Action',
+            'slug' => 'action',
+        ]);
+
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('genres', ['name' => 'Action', 'slug' => 'action']);
+    }
+
+    public function test_admin_can_write(): void
+    {
+        $response = $this->actingAs($this->admin())->postJson('/api/genres', [
             'name' => 'Action',
             'slug' => 'action',
         ]);

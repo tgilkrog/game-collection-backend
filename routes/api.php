@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\BarcodeLookupController;
 use App\Http\Controllers\Api\ConditionController;
 use App\Http\Controllers\Api\FollowController;
@@ -51,7 +52,36 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/users/{user}/follow', [FollowController::class, 'destroy']);
 
     Route::apiResource('home', HomeController::class);
-    Route::apiResource('genres', GenreController::class)->except(['index']);
+
+    Route::post('/genres', [GenreController::class, 'store'])->middleware('admin');
+    Route::put('/genres/{genre}', [GenreController::class, 'update'])->middleware('admin');
+    Route::delete('/genres/{genre}', [GenreController::class, 'destroy'])->middleware('admin');
+
+    Route::post('/themes', [ThemeController::class, 'store'])->middleware('admin');
+    Route::put('/themes/{theme}', [ThemeController::class, 'update'])->middleware('admin');
+    Route::delete('/themes/{theme}', [ThemeController::class, 'destroy'])->middleware('admin');
+
+    Route::post('/game-modes', [GameModeController::class, 'store'])->middleware('admin');
+    Route::put('/game-modes/{gameMode}', [GameModeController::class, 'update'])->middleware('admin');
+    Route::delete('/game-modes/{gameMode}', [GameModeController::class, 'destroy'])->middleware('admin');
+
+    Route::post('/player-perspectives', [PlayerPerspectiveController::class, 'store'])->middleware('admin');
+    Route::put('/player-perspectives/{playerPerspective}', [PlayerPerspectiveController::class, 'update'])->middleware('admin');
+    Route::delete('/player-perspectives/{playerPerspective}', [PlayerPerspectiveController::class, 'destroy'])->middleware('admin');
+
+    Route::post('/platforms', [PlatformController::class, 'store'])->middleware('admin');
+    Route::put('/platforms/{platform}', [PlatformController::class, 'update'])->middleware('admin');
+    Route::delete('/platforms/{platform}', [PlatformController::class, 'destroy'])->middleware('admin');
+
+    Route::post('/conditions', [ConditionController::class, 'store'])->middleware('admin');
+    Route::put('/conditions/{condition}', [ConditionController::class, 'update'])->middleware('admin');
+    Route::delete('/conditions/{condition}', [ConditionController::class, 'destroy'])->middleware('admin');
+
+    Route::get('/admin/users', [AdminUserController::class, 'index'])->middleware('admin');
+    Route::put('/admin/users/{user}/promote', [AdminUserController::class, 'promote'])->middleware('admin');
+    Route::put('/admin/users/{user}/demote', [AdminUserController::class, 'demote'])->middleware('admin');
+    Route::put('/admin/users/{user}/ban', [AdminUserController::class, 'ban'])->middleware('admin');
+    Route::put('/admin/users/{user}/unban', [AdminUserController::class, 'unban'])->middleware('admin');
 
     Route::post('/game-base', [GameBaseController::class, 'store'])->middleware('admin');
     Route::put('/game-base/{gameBase}', [GameBaseController::class, 'update'])->middleware('admin');
@@ -65,7 +95,4 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/wishlist', [WishlistController::class, 'store']);
     Route::delete('/wishlist/{gameBase}', [WishlistController::class, 'destroy']);
-
-    Route::apiResource('conditions', ConditionController::class)->except(['index']);
-    Route::apiResource('platforms', PlatformController::class)->except(['index']);
 });

@@ -46,27 +46,27 @@ class GameCopyController extends Controller
 
         if ($request->filled('condition_id')) {
             $ids = (array) $request->input('condition_id');
-            $query->whereHas('parts', fn($q) => $q->whereIn('condition_id', $ids));
+            $query->whereHas('parts', fn ($q) => $q->whereIn('condition_id', $ids));
         }
 
         if ($request->filled('genre_id')) {
             $ids = (array) $request->input('genre_id');
-            $query->whereHas('game.genres', fn($q) => $q->whereIn('genres.id', $ids));
+            $query->whereHas('game.genres', fn ($q) => $q->whereIn('genres.id', $ids));
         }
 
         if ($request->filled('theme_id')) {
             $ids = (array) $request->input('theme_id');
-            $query->whereHas('game.themes', fn($q) => $q->whereIn('themes.id', $ids));
+            $query->whereHas('game.themes', fn ($q) => $q->whereIn('themes.id', $ids));
         }
 
         if ($request->filled('game_mode_id')) {
             $ids = (array) $request->input('game_mode_id');
-            $query->whereHas('game.gameModes', fn($q) => $q->whereIn('game_modes.id', $ids));
+            $query->whereHas('game.gameModes', fn ($q) => $q->whereIn('game_modes.id', $ids));
         }
 
         if ($request->filled('player_perspective_id')) {
             $ids = (array) $request->input('player_perspective_id');
-            $query->whereHas('game.playerPerspectives', fn($q) => $q->whereIn('player_perspectives.id', $ids));
+            $query->whereHas('game.playerPerspectives', fn ($q) => $q->whereIn('player_perspectives.id', $ids));
         }
 
         return GameCopyResource::collection($query->paginate(24)->withQueryString());
@@ -77,25 +77,30 @@ class GameCopyController extends Controller
      */
     public function store(Request $request)
     {
-         $validated = $request->validate([
-            'title'        => 'nullable|string|max:255',
+        $validated = $request->validate([
+            'title' => 'nullable|string|max:255',
             'game_base_id' => 'required_without:igdb_id|exists:game_bases,id',
-            'igdb_id'      => 'required_without:game_base_id|integer',
-            'platform_id'  => 'required|exists:platforms,id',
-            'region'       => 'nullable|string|max:255',
+            'igdb_id' => 'required_without:game_base_id|integer',
+            'platform_id' => 'required|exists:platforms,id',
+            'region' => 'nullable|string|max:255',
             'purchase_price' => 'nullable|numeric',
-            'purchase_date'  => 'nullable|date',
-            'notes'          => 'nullable|string|max:2000',
+            'purchase_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:2000',
 
             // nested parts
-            'parts'               => 'array',
-            'parts.*.type'        => 'required|string|max:100',
+            'parts' => 'array',
+            'parts.*.type' => 'required|string|max:100',
             'parts.*.condition_id' => 'required|exists:conditions,id',
-            'parts.*.notes'       => 'nullable|string|max:500',
+            'parts.*.notes' => 'nullable|string|max:500',
         ]);
 
         if ($request->filled('igdb_id')) {
             $igdbData = $this->igdb->find($request->igdb_id);
+
+            if (empty($igdbData)) {
+                abort(422, 'Could not find that game on IGDB. It may have been removed, or IGDB is temporarily unavailable.');
+            }
+
             $igdbGenres = $igdbData['genres'] ?? [];
             unset($igdbData['genres']);
 
@@ -106,36 +111,36 @@ class GameCopyController extends Controller
                 );
 
             if ($gameBase->wasRecentlyCreated) {
-                if (!empty($igdbGenres)) {
+                if (! empty($igdbGenres)) {
                     $gameBase->genres()->sync(
-                        collect($igdbGenres)->map(fn($g) => Genre::updateOrCreate(
+                        collect($igdbGenres)->map(fn ($g) => Genre::updateOrCreate(
                             ['slug' => Str::slug($g['name'])],
                             ['name' => $g['name'], 'igdb_id' => $g['id']]
                         )->id)->all()
                     );
                 }
 
-                if (!empty($igdbData['themes'])) {
+                if (! empty($igdbData['themes'])) {
                     $gameBase->themes()->sync(
-                        collect($igdbData['themes'])->map(fn($t) => Theme::updateOrCreate(
+                        collect($igdbData['themes'])->map(fn ($t) => Theme::updateOrCreate(
                             ['slug' => Str::slug($t['name'])],
                             ['name' => $t['name'], 'igdb_id' => $t['id']]
                         )->id)->all()
                     );
                 }
 
-                if (!empty($igdbData['game_modes'])) {
+                if (! empty($igdbData['game_modes'])) {
                     $gameBase->gameModes()->sync(
-                        collect($igdbData['game_modes'])->map(fn($m) => GameMode::updateOrCreate(
+                        collect($igdbData['game_modes'])->map(fn ($m) => GameMode::updateOrCreate(
                             ['slug' => Str::slug($m['name'])],
                             ['name' => $m['name'], 'igdb_id' => $m['id']]
                         )->id)->all()
                     );
                 }
 
-                if (!empty($igdbData['player_perspectives'])) {
+                if (! empty($igdbData['player_perspectives'])) {
                     $gameBase->playerPerspectives()->sync(
-                        collect($igdbData['player_perspectives'])->map(fn($p) => PlayerPerspective::updateOrCreate(
+                        collect($igdbData['player_perspectives'])->map(fn ($p) => PlayerPerspective::updateOrCreate(
                             ['slug' => Str::slug($p['name'])],
                             ['name' => $p['name'], 'igdb_id' => $p['id']]
                         )->id)->all()
@@ -175,6 +180,7 @@ class GameCopyController extends Controller
             'parts.condition',
             'user',
         ]);
+
         return new GameCopyResource($gameCopy);
     }
 
@@ -186,16 +192,16 @@ class GameCopyController extends Controller
         abort_if($gameCopy->user_id !== auth()->id(), 403);
 
         $validated = $request->validate([
-            'platform_id'          => 'required|exists:platforms,id',
-            'title'                => 'nullable|string|max:255',
-            'region'               => 'nullable|string|max:255',
-            'purchase_price'       => 'nullable|numeric',
-            'purchase_date'        => 'nullable|date',
-            'notes'                => 'nullable|string|max:2000',
-            'parts'                => 'array',
-            'parts.*.type'         => 'required|string|max:100',
+            'platform_id' => 'required|exists:platforms,id',
+            'title' => 'nullable|string|max:255',
+            'region' => 'nullable|string|max:255',
+            'purchase_price' => 'nullable|numeric',
+            'purchase_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:2000',
+            'parts' => 'array',
+            'parts.*.type' => 'required|string|max:100',
             'parts.*.condition_id' => 'required|exists:conditions,id',
-            'parts.*.notes'        => 'nullable|string|max:500',
+            'parts.*.notes' => 'nullable|string|max:500',
         ]);
 
         $gameCopy->update($validated);
@@ -215,15 +221,16 @@ class GameCopyController extends Controller
     {
         abort_if($gameCopy->user_id !== auth()->id(), 403);
         $gameCopy->delete();
+
         return response()->noContent();
     }
 
     public function export(Request $request)
     {
         $validated = $request->validate([
-            'format'    => 'required|in:xlsx,csv',
-            'columns'   => 'required|array|min:1',
-            'columns.*' => 'in:' . implode(',', array_keys(GameCopiesExport::COLUMNS)),
+            'format' => 'required|in:xlsx,csv',
+            'columns' => 'required|array|min:1',
+            'columns.*' => 'in:'.implode(',', array_keys(GameCopiesExport::COLUMNS)),
         ]);
 
         $copies = GameCopy::where('user_id', auth()->id())

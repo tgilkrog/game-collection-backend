@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\UserRank;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -35,6 +36,9 @@ class GameCopyResource extends JsonResource
             'user' => $this->whenLoaded('user', fn() => [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
+                'avatar' => $this->user->avatar,
+                'rank' => UserRank::fromCount($this->user->game_copies_count ?? 0),
+                'copy_count' => $this->user->game_copies_count,
             ]),
         ];
     }

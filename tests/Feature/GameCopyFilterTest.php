@@ -98,6 +98,39 @@ class GameCopyFilterTest extends TestCase
         $this->assertSame($rpgCopy->id, $response->json('data.0.id'));
     }
 
+    public function test_game_base_id_filter(): void
+    {
+        $user = User::factory()->create();
+        $platform = Platform::create(['name' => 'SNES']);
+        $gameA = GameBase::create(['title' => 'Game A']);
+        $gameB = GameBase::create(['title' => 'Game B']);
+
+        $copyA = $this->makeCopy($user, $gameA, $platform);
+        $this->makeCopy($user, $gameB, $platform);
+
+        $response = $this->getJson("/api/game-copies?game_base_id[]={$gameA->id}");
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data'));
+        $this->assertSame($copyA->id, $response->json('data.0.id'));
+    }
+
+    public function test_exclude_ids_filter(): void
+    {
+        $user = User::factory()->create();
+        $game = GameBase::create(['title' => 'Game A']);
+        $platform = Platform::create(['name' => 'SNES']);
+
+        $keep = $this->makeCopy($user, $game, $platform);
+        $excluded = $this->makeCopy($user, $game, $platform);
+
+        $response = $this->getJson("/api/game-copies?exclude_ids[]={$excluded->id}");
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data'));
+        $this->assertSame($keep->id, $response->json('data.0.id'));
+    }
+
     public function test_facets_combine_with_and(): void
     {
         $user = User::factory()->create();

@@ -13,9 +13,10 @@ class ConditionController extends Controller
      * Display a listing of the resource.
      * test for auto deploy
      */
-    public function index()
+    public function index(Request $request)
     {
-        $conditions = Condition::orderBy('id')->get();
+        $conditions = Condition::when($request->boolean('in_use'), fn ($q) => $q->whereHas('copyParts'))
+            ->orderBy('id')->get();
 
         return ConditionResource::collection($conditions);
     }

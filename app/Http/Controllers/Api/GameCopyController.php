@@ -30,7 +30,7 @@ class GameCopyController extends Controller
             $query->whereIn('user_id', $followingIds);
         }
 
-        return GameCopyResource::collection($query->paginate(10));
+        return GameCopyResource::collection($query->paginate($request->integer('per_page', 10)));
     }
 
     /**
@@ -38,7 +38,18 @@ class GameCopyController extends Controller
      */
     public function index(Request $request)
     {
-        $query = GameCopy::with(['game', 'platform', 'user'])->latest();
+        $query = GameCopy::with([
+            'game', 'platform', 'parts.condition',
+            'user' => fn ($q) => $q->withCount('gameCopies'),
+        ])->latest();
+
+        if ($request->filled('game_base_id')) {
+            $query->whereIn('game_base_id', (array) $request->input('game_base_id'));
+        }
+
+        if ($request->filled('exclude_ids')) {
+            $query->whereNotIn('id', (array) $request->input('exclude_ids'));
+        }
 
         if ($request->filled('platform_id')) {
             $query->whereIn('platform_id', (array) $request->input('platform_id'));

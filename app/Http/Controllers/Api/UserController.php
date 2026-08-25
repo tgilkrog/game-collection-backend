@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\GameCopyResource;
+use App\Mail\PasswordChangedMail;
 use App\Models\User;
 use App\Support\UserRank;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
@@ -116,6 +118,8 @@ class UserController extends Controller
         ]);
 
         $user->update(['password' => Hash::make($request->password)]);
+
+        Mail::to($user)->queue(new PasswordChangedMail($user));
 
         return response()->noContent();
     }

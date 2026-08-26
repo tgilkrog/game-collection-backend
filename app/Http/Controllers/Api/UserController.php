@@ -7,6 +7,7 @@ use App\Http\Resources\GameCopyResource;
 use App\Models\User;
 use App\Support\UserRank;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
@@ -39,7 +40,17 @@ class UserController extends Controller
 
     public function show(User $user)
     {
-        $user->loadCount('gameCopies');
+        $stats = DB::table('users')
+            ->where('id', $user->id)
+            ->selectRaw('
+                (select count(*) from game_copies where game_copies.user_id = users.id) as copy_count,
+                (select count(*) from wishlists where wishlists.user_id = users.id) as wishlist_count,
+                (select coalesce(sum(purchase_price), 0) from game_copies where game_copies.user_id = users.id) as total_value,
+                (select count(distinct platform_id) from game_copies where game_copies.user_id = users.id) as platform_count,
+                (select count(*) from follows where follows.following_id = users.id) as followers_count,
+                (select count(*) from follows where follows.follower_id = users.id) as following_count
+            ')
+            ->first();
 
         $isFollowing = auth()->check()
             ? $user->followers()->where('follower_id', auth()->id())->exists()
@@ -53,14 +64,14 @@ class UserController extends Controller
             'banner_position' => $user->banner_position,
             'bio' => $user->bio,
             'is_admin' => $user->is_admin,
-            'copy_count' => $user->game_copies_count,
-            'wishlist_count' => $user->wishlist()->count(),
-            'total_value' => (float) $user->gameCopies()->sum('purchase_price'),
-            'platform_count' => $user->gameCopies()->distinct('platform_id')->count('platform_id'),
-            'followers_count' => $user->followers()->count(),
-            'following_count' => $user->following()->count(),
+            'copy_count' => (int) $stats->copy_count,
+            'wishlist_count' => (int) $stats->wishlist_count,
+            'total_value' => (float) $stats->total_value,
+            'platform_count' => (int) $stats->platform_count,
+            'followers_count' => (int) $stats->followers_count,
+            'following_count' => (int) $stats->following_count,
             'is_following' => $isFollowing,
-            'rank' => UserRank::fromCount($user->game_copies_count),
+            'rank' => UserRank::fromCount((int) $stats->copy_count),
         ]);
     }
 
@@ -122,29 +133,41 @@ class UserController extends Controller
 
     public function stats(User $user)
     {
-        $copies = $user->gameCopies()->with(['platform', 'game.genres'])->get();
-
-        $byPlatform = $copies->groupBy('platform.name')
-            ->map(fn ($group, $name) => [
-                'name' => $name ?: 'Unknown',
-                'count' => $group->count(),
-                'value' => round($group->sum('purchase_price'), 2),
+        $byPlatform = $user->gameCopies()
+            ->join('platforms', 'platforms.id', '=', 'game_copies.platform_id')
+            ->selectRaw('platforms.name as name, count(*) as count, sum(game_copies.purchase_price) as value')
+            ->groupBy('platforms.id', 'platforms.name')
+            ->orderByDesc('count')
+            ->get()
+            ->map(fn ($row) => [
+                'name' => $row->name ?: 'Unknown',
+                'count' => (int) $row->count,
+                'value' => round((float) $row->value, 2),
             ])
-            ->sortByDesc('count')
             ->values();
 
-        $byGenre = $copies->flatMap(fn ($c) => $c->game?->genres ?? collect())
-            ->groupBy('name')
-            ->map(fn ($g, $name) => ['name' => $name, 'count' => $g->count()])
-            ->sortByDesc('count')
-            ->take(8)
+        $byGenre = $user->gameCopies()
+            ->join('game_bases', 'game_bases.id', '=', 'game_copies.game_base_id')
+            ->join('game_genre', 'game_genre.game_base_id', '=', 'game_bases.id')
+            ->join('genres', 'genres.id', '=', 'game_genre.genre_id')
+            ->selectRaw('genres.name as name, count(*) as count')
+            ->groupBy('genres.id', 'genres.name')
+            ->orderByDesc('count')
+            ->limit(8)
+            ->get()
+            ->map(fn ($row) => ['name' => $row->name, 'count' => (int) $row->count])
             ->values();
 
-        $byDecade = $copies->groupBy(fn ($c) => $c->game
-            ? (floor(($c->game->release_year ?? 0) / 10) * 10).'s'
-            : 'Unknown'
-        )->map(fn ($g, $decade) => ['decade' => $decade, 'count' => $g->count()])
-            ->sortBy('decade')
+        $byDecade = $user->gameCopies()
+            ->join('game_bases', 'game_bases.id', '=', 'game_copies.game_base_id')
+            ->selectRaw('floor(coalesce(game_bases.release_year, 0) / 10) * 10 as decade, count(*) as count')
+            ->groupBy('decade')
+            ->orderByRaw('decade = 0, decade')
+            ->get()
+            ->map(fn ($row) => [
+                'decade' => $row->decade > 0 ? ((int) $row->decade).'s' : 'Unknown',
+                'count' => (int) $row->count,
+            ])
             ->values();
 
         return response()->json(compact('byPlatform', 'byGenre', 'byDecade'));

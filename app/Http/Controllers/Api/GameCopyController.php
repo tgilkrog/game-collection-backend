@@ -218,8 +218,23 @@ class GameCopyController extends Controller
         $gameCopy->update($validated);
 
         if (array_key_exists('parts', $validated)) {
-            $gameCopy->parts()->delete();
-            $gameCopy->parts()->createMany($validated['parts']);
+            $normalize = fn ($parts) => collect($parts)
+                ->map(fn ($p) => [
+                    'type' => $p['type'],
+                    'condition_id' => (int) $p['condition_id'],
+                    'notes' => $p['notes'] ?? '',
+                ])
+                ->sortBy('type')
+                ->values()
+                ->all();
+
+            $incoming = $normalize($validated['parts']);
+            $existing = $normalize($gameCopy->parts()->get(['type', 'condition_id', 'notes']));
+
+            if ($incoming !== $existing) {
+                $gameCopy->parts()->delete();
+                $gameCopy->parts()->createMany($validated['parts']);
+            }
         }
 
         return new GameCopyResource($gameCopy->load(['game', 'platform', 'parts.condition']));

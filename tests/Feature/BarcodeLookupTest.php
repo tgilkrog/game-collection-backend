@@ -204,6 +204,20 @@ class BarcodeLookupTest extends TestCase
         $response->assertJson(['matched' => false, 'result' => null]);
     }
 
+    public function test_network_failure_degrades_gracefully_instead_of_500ing(): void
+    {
+        Http::fake(function () {
+            throw new \Illuminate\Http\Client\ConnectionException('Connection timed out');
+        });
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->getJson('/api/barcode-lookup?barcode=012345678905');
+
+        $response->assertOk();
+        $response->assertJson(['matched' => false, 'result' => null]);
+    }
+
     public function test_missing_barcode_param_is_rejected(): void
     {
         $user = User::factory()->create();

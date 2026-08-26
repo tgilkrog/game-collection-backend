@@ -19,7 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Public auth routes
-Route::post('/register', [AuthController::class, 'register']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::post('/logout', [AuthController::class, 'logout']);
 
@@ -40,7 +40,7 @@ Route::get('/themes', [ThemeController::class, 'index']);
 Route::get('/game-modes', [GameModeController::class, 'index']);
 Route::get('/player-perspectives', [PlayerPerspectiveController::class, 'index']);
 Route::get('/game-base', [GameBaseController::class, 'index']);
-Route::get('/game-base/search', [GameBaseController::class, 'search']);
+Route::get('/game-base/search', [GameBaseController::class, 'search'])->middleware('throttle:20,1');
 Route::get('/game-base/{gameBase}', [GameBaseController::class, 'show']);
 
 // Auth-protected routes

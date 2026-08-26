@@ -48,6 +48,33 @@ class GameBaseTaxonomySyncTest extends TestCase
         $this->assertSame([$perspective->id], $game->playerPerspectives()->pluck('player_perspectives.id')->all());
     }
 
+    public function test_store_rejects_a_nonexistent_genre_id_with_a_validation_error(): void
+    {
+        $response = $this->actingAs($this->admin())->postJson('/api/game-base', [
+            'title' => 'Custom Game',
+            'release_year' => 2001,
+            'genres' => [999999],
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['genres.0']);
+        $this->assertDatabaseMissing('game_bases', ['title' => 'Custom Game']);
+    }
+
+    public function test_update_rejects_a_nonexistent_theme_id_with_a_validation_error(): void
+    {
+        $game = GameBase::create(['title' => 'Custom Game', 'release_year' => 2001]);
+
+        $response = $this->actingAs($this->admin())->putJson("/api/game-base/{$game->id}", [
+            'title' => 'Custom Game',
+            'release_year' => 2001,
+            'themes' => [999999],
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['themes.0']);
+    }
+
     public function test_update_replaces_taxonomy_sync(): void
     {
         $oldTheme = Theme::create(['name' => 'Horror', 'slug' => 'horror']);

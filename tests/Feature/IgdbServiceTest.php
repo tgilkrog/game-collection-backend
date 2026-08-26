@@ -35,4 +35,20 @@ class IgdbServiceTest extends TestCase
 
         Http::assertSentCount(2); // one Twitch token call, one IGDB games call
     }
+
+    public function test_search_query_strips_semicolons_to_prevent_query_injection(): void
+    {
+        Http::fake([
+            'id.twitch.tv/*' => Http::response(['access_token' => 'fake-token', 'expires_in' => 5000000], 200),
+            'api.igdb.com/*' => Http::response([], 200),
+        ]);
+
+        app(IgdbService::class)->search('Chrono Trigger"; fields *; limit 500;');
+
+        // The user-supplied query lands inside the search "..." clause — assert no
+        // semicolon survives there, so it can't terminate the statement early and
+        // append attacker-controlled clauses (e.g. a widened `limit`).
+        Http::assertSent(fn ($request) => ! str_contains($request->url(), 'igdb.com')
+            || ! preg_match('/search "[^"]*;[^"]*"/', $request->body()));
+    }
 }

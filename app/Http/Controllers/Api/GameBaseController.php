@@ -8,6 +8,7 @@ use App\Http\Resources\GameBaseResource;
 use App\Models\GameBase;
 use App\Services\IgdbService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class GameBaseController extends Controller
@@ -64,9 +65,13 @@ class GameBaseController extends Controller
             'description' => 'nullable|string|max:5000',
             'cover_image' => 'nullable|image',
             'genres' => 'array',
+            'genres.*' => 'integer|exists:genres,id',
             'themes' => 'array',
+            'themes.*' => 'integer|exists:themes,id',
             'game_modes' => 'array',
+            'game_modes.*' => 'integer|exists:game_modes,id',
             'player_perspectives' => 'array',
+            'player_perspectives.*' => 'integer|exists:player_perspectives,id',
         ]);
 
         if ($request->hasFile('cover_image')) {
@@ -74,20 +79,24 @@ class GameBaseController extends Controller
             $validated['cover_image'] = '/storage/'.$path;
         }
 
-        $game = GameBase::create($validated);
+        $game = DB::transaction(function () use ($validated) {
+            $game = GameBase::create($validated);
 
-        if (! empty($validated['genres'])) {
-            $game->genres()->sync($validated['genres']);
-        }
-        if (! empty($validated['themes'])) {
-            $game->themes()->sync($validated['themes']);
-        }
-        if (! empty($validated['game_modes'])) {
-            $game->gameModes()->sync($validated['game_modes']);
-        }
-        if (! empty($validated['player_perspectives'])) {
-            $game->playerPerspectives()->sync($validated['player_perspectives']);
-        }
+            if (! empty($validated['genres'])) {
+                $game->genres()->sync($validated['genres']);
+            }
+            if (! empty($validated['themes'])) {
+                $game->themes()->sync($validated['themes']);
+            }
+            if (! empty($validated['game_modes'])) {
+                $game->gameModes()->sync($validated['game_modes']);
+            }
+            if (! empty($validated['player_perspectives'])) {
+                $game->playerPerspectives()->sync($validated['player_perspectives']);
+            }
+
+            return $game;
+        });
 
         return response()->json($game->load(['genres', 'themes', 'gameModes', 'playerPerspectives']));
     }
@@ -122,9 +131,13 @@ class GameBaseController extends Controller
             'description' => 'nullable|string|max:5000',
             'cover_image' => 'nullable|image',
             'genres' => 'array',
+            'genres.*' => 'integer|exists:genres,id',
             'themes' => 'array',
+            'themes.*' => 'integer|exists:themes,id',
             'game_modes' => 'array',
+            'game_modes.*' => 'integer|exists:game_modes,id',
             'player_perspectives' => 'array',
+            'player_perspectives.*' => 'integer|exists:player_perspectives,id',
         ]);
 
         if ($request->hasFile('cover_image')) {
@@ -137,20 +150,22 @@ class GameBaseController extends Controller
             $validated['cover_image'] = '/storage/'.$path;
         }
 
-        $gameBase->update($validated);
+        DB::transaction(function () use ($gameBase, $validated) {
+            $gameBase->update($validated);
 
-        if (isset($validated['genres'])) {
-            $gameBase->genres()->sync($validated['genres']);
-        }
-        if (isset($validated['themes'])) {
-            $gameBase->themes()->sync($validated['themes']);
-        }
-        if (isset($validated['game_modes'])) {
-            $gameBase->gameModes()->sync($validated['game_modes']);
-        }
-        if (isset($validated['player_perspectives'])) {
-            $gameBase->playerPerspectives()->sync($validated['player_perspectives']);
-        }
+            if (isset($validated['genres'])) {
+                $gameBase->genres()->sync($validated['genres']);
+            }
+            if (isset($validated['themes'])) {
+                $gameBase->themes()->sync($validated['themes']);
+            }
+            if (isset($validated['game_modes'])) {
+                $gameBase->gameModes()->sync($validated['game_modes']);
+            }
+            if (isset($validated['player_perspectives'])) {
+                $gameBase->playerPerspectives()->sync($validated['player_perspectives']);
+            }
+        });
 
         return response()->json($gameBase->load(['genres', 'themes', 'gameModes', 'playerPerspectives']));
     }
@@ -169,8 +184,13 @@ class GameBaseController extends Controller
 
     public function search(Request $request)
     {
-        $query = $request->get('q', '');
-        $source = $request->get('source');
+        $validated = $request->validate([
+            'q' => 'nullable|string|max:100',
+            'source' => 'nullable|in:local,igdb',
+        ]);
+
+        $query = $validated['q'] ?? '';
+        $source = $validated['source'] ?? null;
 
         $local = GameBase::where('title', 'like', "%{$query}%")
             ->limit(5)

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class BarcodeLookupService
 {
@@ -15,12 +16,21 @@ class BarcodeLookupService
 
     public function lookup(string $barcode): ?array
     {
-        $response = $this->apiKey
-            ? Http::withHeaders([
-                'user_key' => $this->apiKey,
-                'key_type' => '3scale',
-            ])->get('https://api.upcitemdb.com/prod/v1/lookup', ['upc' => $barcode])
-            : Http::get('https://api.upcitemdb.com/prod/trial/lookup', ['upc' => $barcode]);
+        try {
+            $response = $this->apiKey
+                ? Http::withHeaders([
+                    'user_key' => $this->apiKey,
+                    'key_type' => '3scale',
+                ])->get('https://api.upcitemdb.com/prod/v1/lookup', ['upc' => $barcode])
+                : Http::get('https://api.upcitemdb.com/prod/trial/lookup', ['upc' => $barcode]);
+        } catch (\Throwable $e) {
+            Log::warning('Barcode lookup failed', [
+                'barcode' => $barcode,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
 
         if (! $response->ok()) {
             return null;

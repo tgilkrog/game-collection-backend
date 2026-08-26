@@ -82,7 +82,10 @@ class IgdbService
 
     public function search(string $query): array
     {
-        $safeQuery = str_replace('"', '\\"', $query);
+        // ';' is IGDB's query-language statement separator — strip it rather than
+        // escape it, since a legitimate search string has no use for one, and leaving
+        // it in would let a crafted query append extra clauses (e.g. widen the limit).
+        $safeQuery = str_replace(['"', ';'], ['\\"', ''], $query);
         $games = $this->query(
             'games',
             "search \"{$safeQuery}\"; fields id,name,cover.image_id,first_release_date,platforms.abbreviation; limit 10;"

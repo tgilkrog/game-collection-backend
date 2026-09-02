@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\GameCopyResource;
 use App\Models\GameBase;
 use App\Models\GameCopy;
+use App\Models\GameCopyReview;
 use App\Models\GameMode;
 use App\Models\Genre;
 use App\Models\PlayerPerspective;
@@ -23,14 +24,14 @@ class GameCopyController extends Controller
 
     public function feed(Request $request)
     {
-        $query = GameCopy::with(['game', 'platform', 'user'])->latest();
+        $query = GameCopy::with(['game', 'platform', 'user', 'review'])->latest();
 
         if ($request->boolean('following') && auth()->check()) {
             $followingIds = auth()->user()->following()->pluck('users.id');
             $query->whereIn('user_id', $followingIds);
         }
 
-        return GameCopyResource::collection($query->paginate($request->integer('per_page', 10)));
+        return GameCopyResource::collection($query->paginate($request->integer('per_page', 18)));
     }
 
     /**
@@ -39,7 +40,7 @@ class GameCopyController extends Controller
     public function index(Request $request)
     {
         $query = GameCopy::with([
-            'game', 'platform', 'parts.condition',
+            'game', 'platform', 'parts.condition', 'review',
             'user' => fn ($q) => $q->withCount('gameCopies'),
         ])->latest();
 
@@ -80,7 +81,30 @@ class GameCopyController extends Controller
             $query->whereHas('game.playerPerspectives', fn ($q) => $q->whereIn('player_perspectives.id', $ids));
         }
 
+        if ($request->filled('play_status')) {
+            $ids = (array) $request->input('play_status');
+            $query->whereHas('review', fn ($q) => $q->whereIn('play_status', $ids));
+        }
+
         return GameCopyResource::collection($query->paginate(24)->withQueryString());
+    }
+
+    /**
+     * Pick a random copy from the authenticated user's backlog.
+     */
+    public function randomBacklog()
+    {
+        $copy = GameCopy::where('user_id', auth()->id())
+            ->whereHas('review', fn ($q) => $q->where('play_status', 'backlog'))
+            ->with(['game', 'platform', 'review'])
+            ->inRandomOrder()
+            ->first();
+
+        if (! $copy) {
+            return response()->json(['message' => 'No backlog copies found.'], 404);
+        }
+
+        return new GameCopyResource($copy);
     }
 
     /**
@@ -97,6 +121,12 @@ class GameCopyController extends Controller
             'purchase_price' => 'nullable|numeric',
             'purchase_date' => 'nullable|date',
             'notes' => 'nullable|string|max:2000',
+            'play_status' => 'nullable|in:'.implode(',', GameCopyReview::PLAY_STATUSES),
+            'rating' => 'nullable|integer|between:1,5',
+            'hours_played' => 'nullable|numeric|min:0|max:9999.9',
+            'playthrough_count' => 'nullable|integer|min:0|max:999',
+            'would_replay' => 'nullable|boolean',
+            'would_recommend' => 'nullable|boolean',
 
             // nested parts
             'parts' => 'array',
@@ -165,14 +195,33 @@ class GameCopyController extends Controller
         unset($validated['igdb_id']);
         $validated['user_id'] = auth()->id();
 
+        $reviewFields = [
+            'play_status' => $validated['play_status'] ?? 'backlog',
+            'rating' => $validated['rating'] ?? null,
+            'hours_played' => $validated['hours_played'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+            'playthrough_count' => $validated['playthrough_count'] ?? null,
+            'would_replay' => $validated['would_replay'] ?? null,
+            'would_recommend' => $validated['would_recommend'] ?? null,
+        ];
+        unset(
+            $validated['play_status'], $validated['rating'], $validated['hours_played'], $validated['notes'],
+            $validated['playthrough_count'], $validated['would_replay'], $validated['would_recommend'],
+        );
+
         $gameCopy = GameCopy::create($validated);
 
         if (isset($validated['parts'])) {
             $gameCopy->parts()->createMany($validated['parts']);
         }
 
+        $gameCopy->review()->create(array_merge($reviewFields, [
+            'user_id' => $gameCopy->user_id,
+            'game_base_id' => $gameCopy->game_base_id,
+        ]));
+
         return response()->json(
-            $gameCopy->load(['game', 'platform', 'parts.condition']),
+            $gameCopy->load(['game', 'platform', 'parts.condition', 'review']),
             201
         );
     }
@@ -190,6 +239,7 @@ class GameCopyController extends Controller
             'platform',
             'parts.condition',
             'user',
+            'review',
         ]);
 
         return new GameCopyResource($gameCopy);
@@ -209,13 +259,42 @@ class GameCopyController extends Controller
             'purchase_price' => 'nullable|numeric',
             'purchase_date' => 'nullable|date',
             'notes' => 'nullable|string|max:2000',
+            'play_status' => 'nullable|in:'.implode(',', GameCopyReview::PLAY_STATUSES),
+            'rating' => 'nullable|integer|between:1,5',
+            'hours_played' => 'nullable|numeric|min:0|max:9999.9',
+            'playthrough_count' => 'nullable|integer|min:0|max:999',
+            'would_replay' => 'nullable|boolean',
+            'would_recommend' => 'nullable|boolean',
             'parts' => 'array',
             'parts.*.type' => 'required|string|max:100',
             'parts.*.condition_id' => 'required|exists:conditions,id',
             'parts.*.notes' => 'nullable|string|max:500',
         ]);
 
+        $existingReview = $gameCopy->review;
+        $reviewFields = [
+            'play_status' => $validated['play_status'] ?? $existingReview?->play_status ?? 'backlog',
+            'rating' => array_key_exists('rating', $validated) ? $validated['rating'] : $existingReview?->rating,
+            'hours_played' => array_key_exists('hours_played', $validated) ? $validated['hours_played'] : $existingReview?->hours_played,
+            'notes' => array_key_exists('notes', $validated) ? $validated['notes'] : $existingReview?->notes,
+            'playthrough_count' => array_key_exists('playthrough_count', $validated) ? $validated['playthrough_count'] : $existingReview?->playthrough_count,
+            'would_replay' => array_key_exists('would_replay', $validated) ? $validated['would_replay'] : $existingReview?->would_replay,
+            'would_recommend' => array_key_exists('would_recommend', $validated) ? $validated['would_recommend'] : $existingReview?->would_recommend,
+        ];
+        unset(
+            $validated['play_status'], $validated['rating'], $validated['hours_played'], $validated['notes'],
+            $validated['playthrough_count'], $validated['would_replay'], $validated['would_recommend'],
+        );
+
         $gameCopy->update($validated);
+
+        $gameCopy->review()->updateOrCreate(
+            ['game_copy_id' => $gameCopy->id],
+            array_merge($reviewFields, [
+                'user_id' => $gameCopy->user_id,
+                'game_base_id' => $gameCopy->game_base_id,
+            ])
+        );
 
         if (array_key_exists('parts', $validated)) {
             $normalize = fn ($parts) => collect($parts)
@@ -237,7 +316,7 @@ class GameCopyController extends Controller
             }
         }
 
-        return new GameCopyResource($gameCopy->load(['game', 'platform', 'parts.condition']));
+        return new GameCopyResource($gameCopy->load(['game', 'platform', 'parts.condition', 'review']));
     }
 
     /**
@@ -260,7 +339,7 @@ class GameCopyController extends Controller
         ]);
 
         $copies = GameCopy::where('user_id', auth()->id())
-            ->with(['game', 'platform', 'parts.condition'])
+            ->with(['game', 'platform', 'parts.condition', 'review'])
             ->get();
 
         $writerType = $validated['format'] === 'csv' ? ExcelFormat::CSV : ExcelFormat::XLSX;

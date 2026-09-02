@@ -122,6 +122,71 @@ class GameCopyExportTest extends TestCase
         $this->assertStringContainsString('Disc: Mint', $csv);
     }
 
+    public function test_play_status_rating_and_hours_played_columns_are_exportable(): void
+    {
+        $user = User::factory()->create();
+        $copy = $this->makeCopy($user, 'Chrono Trigger');
+        $copy->review()->create([
+            'user_id' => $user->id,
+            'game_base_id' => $copy->game_base_id,
+            'play_status' => 'completed',
+            'rating' => 5,
+            'hours_played' => 42.5,
+        ]);
+
+        $response = $this->actingAs($user)->get(
+            '/api/game-copies/export?format=csv&columns[]=play_status&columns[]=rating&columns[]=hours_played'
+        );
+
+        $response->assertOk();
+        $csv = $response->streamedContent();
+
+        $this->assertStringContainsString('Completed', $csv);
+        $this->assertStringContainsString('5', $csv);
+        $this->assertStringContainsString('42.5', $csv);
+    }
+
+    public function test_playthrough_count_and_would_replay_recommend_columns_are_exportable(): void
+    {
+        $user = User::factory()->create();
+        $copy = $this->makeCopy($user, 'Chrono Trigger');
+        $copy->review()->create([
+            'user_id' => $user->id,
+            'game_base_id' => $copy->game_base_id,
+            'playthrough_count' => 3,
+            'would_replay' => true,
+            'would_recommend' => false,
+        ]);
+
+        $response = $this->actingAs($user)->get(
+            '/api/game-copies/export?format=csv&columns[]=playthrough_count&columns[]=would_replay&columns[]=would_recommend'
+        );
+
+        $response->assertOk();
+        $csv = $response->streamedContent();
+        $lines = array_values(array_filter(explode("\n", trim($csv))));
+        $row = str_getcsv($lines[1]);
+
+        $this->assertSame(['3', 'Yes', 'No'], $row);
+    }
+
+    public function test_unset_would_replay_recommend_export_as_empty_string(): void
+    {
+        $user = User::factory()->create();
+        $this->makeCopy($user, 'Chrono Trigger');
+
+        $response = $this->actingAs($user)->get(
+            '/api/game-copies/export?format=csv&columns[]=game_title&columns[]=would_replay&columns[]=would_recommend'
+        );
+
+        $response->assertOk();
+        $csv = $response->streamedContent();
+
+        $this->assertStringContainsString('Chrono Trigger', $csv);
+        $this->assertStringNotContainsString('Yes', $csv);
+        $this->assertStringNotContainsString('No', $csv);
+    }
+
     public function test_invalid_column_is_rejected(): void
     {
         $user = User::factory()->create();

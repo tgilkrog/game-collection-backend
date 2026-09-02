@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\GameCopy;
+use App\Models\GameCopyReview;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -18,6 +19,12 @@ class GameCopiesExport implements FromCollection, WithHeadings, WithMapping
         'purchase_price' => 'Purchase Price (DKK)',
         'purchase_date'  => 'Purchase Date',
         'notes'          => 'Notes',
+        'play_status'    => 'Play Status',
+        'rating'         => 'Rating',
+        'hours_played'   => 'Hours Played',
+        'playthrough_count' => 'Playthrough Count',
+        'would_replay'   => 'Would Replay',
+        'would_recommend' => 'Would Recommend',
         'parts'          => 'Parts & Condition',
     ];
 
@@ -56,10 +63,25 @@ class GameCopiesExport implements FromCollection, WithHeadings, WithMapping
             'region'         => $copy->region ?? '',
             'purchase_price' => $copy->purchase_price !== null ? (string) $copy->purchase_price : '',
             'purchase_date'  => $copy->purchase_date?->format('Y-m-d') ?? '',
-            'notes'          => $copy->notes ?? '',
+            'notes'          => $copy->review?->notes ?? '',
+            'play_status'    => GameCopyReview::PLAY_STATUS_LABELS[$copy->review?->play_status] ?? '',
+            'rating'         => $copy->review?->rating !== null ? (string) $copy->review->rating : '',
+            'hours_played'   => $copy->review?->hours_played !== null ? (string) $copy->review->hours_played : '',
+            'playthrough_count' => $copy->review?->playthrough_count !== null ? (string) $copy->review->playthrough_count : '',
+            'would_replay'   => $this->boolLabel($copy->review?->would_replay),
+            'would_recommend' => $this->boolLabel($copy->review?->would_recommend),
             'parts'          => $copy->parts
                 ->map(fn ($part) => "{$part->type}: {$part->condition->name}")
                 ->implode('; '),
+        };
+    }
+
+    private function boolLabel(?bool $value): string
+    {
+        return match ($value) {
+            true => 'Yes',
+            false => 'No',
+            default => '',
         };
     }
 }

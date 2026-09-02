@@ -131,6 +131,28 @@ class GameCopyFilterTest extends TestCase
         $this->assertSame($keep->id, $response->json('data.0.id'));
     }
 
+    public function test_play_status_filter_supports_multiple_values(): void
+    {
+        $user = User::factory()->create();
+        $game = GameBase::create(['title' => 'Game A']);
+        $platform = Platform::create(['name' => 'SNES']);
+
+        $backlog = $this->makeCopy($user, $game, $platform);
+        $backlog->review()->create(['user_id' => $user->id, 'game_base_id' => $game->id, 'play_status' => 'backlog']);
+
+        $playing = $this->makeCopy($user, $game, $platform);
+        $playing->review()->create(['user_id' => $user->id, 'game_base_id' => $game->id, 'play_status' => 'playing']);
+
+        $completed = $this->makeCopy($user, $game, $platform);
+        $completed->review()->create(['user_id' => $user->id, 'game_base_id' => $game->id, 'play_status' => 'completed']);
+
+        $response = $this->getJson('/api/game-copies?play_status[]=backlog&play_status[]=playing');
+
+        $response->assertOk();
+        $ids = collect($response->json('data'))->pluck('id')->sort()->values()->all();
+        $this->assertSame([$backlog->id, $playing->id], $ids);
+    }
+
     public function test_facets_combine_with_and(): void
     {
         $user = User::factory()->create();

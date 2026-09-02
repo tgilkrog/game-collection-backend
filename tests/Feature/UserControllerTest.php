@@ -95,4 +95,64 @@ class UserControllerTest extends TestCase
         $byDecade = collect($response->json('byDecade'))->keyBy('decade');
         $this->assertSame(1, $byDecade['Unknown']['count']);
     }
+
+    public function test_stats_aggregates_average_rating_by_genre_and_ignores_unrated_copies(): void
+    {
+        $user = User::factory()->create();
+        $platform = Platform::create(['name' => 'SNES']);
+        $rpg = Genre::create(['name' => 'RPG', 'slug' => 'rpg']);
+
+        $chrono = GameBase::create(['title' => 'Chrono Trigger']);
+        $chrono->genres()->sync([$rpg->id]);
+        $ffvi = GameBase::create(['title' => 'Final Fantasy VI']);
+        $ffvi->genres()->sync([$rpg->id]);
+
+        $ratedCopyA = GameCopy::create(['user_id' => $user->id, 'game_base_id' => $chrono->id, 'platform_id' => $platform->id]);
+        $ratedCopyA->review()->create(['user_id' => $user->id, 'game_base_id' => $chrono->id, 'rating' => 5]);
+
+        $ratedCopyB = GameCopy::create(['user_id' => $user->id, 'game_base_id' => $ffvi->id, 'platform_id' => $platform->id]);
+        $ratedCopyB->review()->create(['user_id' => $user->id, 'game_base_id' => $ffvi->id, 'rating' => 3]);
+
+        $unratedCopy = GameCopy::create(['user_id' => $user->id, 'game_base_id' => $chrono->id, 'platform_id' => $platform->id]);
+        $unratedCopy->review()->create(['user_id' => $user->id, 'game_base_id' => $chrono->id, 'rating' => null]);
+
+        $response = $this->getJson("/api/users/{$user->name}/stats");
+
+        $response->assertOk();
+        $byGenreRating = collect($response->json('byGenreRating'))->keyBy('name');
+        $this->assertEquals(4.0, $byGenreRating['RPG']['avg_rating']);
+        $this->assertSame(2, $byGenreRating['RPG']['count']);
+    }
+
+    public function test_show_reports_null_avg_rating_when_no_copies_are_rated(): void
+    {
+        $user = User::factory()->create();
+        $platform = Platform::create(['name' => 'SNES']);
+        $game = GameBase::create(['title' => 'Chrono Trigger']);
+        $copy = GameCopy::create(['user_id' => $user->id, 'game_base_id' => $game->id, 'platform_id' => $platform->id]);
+        $copy->review()->create(['user_id' => $user->id, 'game_base_id' => $game->id]);
+
+        $response = $this->getJson("/api/users/{$user->name}");
+
+        $response->assertOk();
+        $response->assertJsonPath('avg_rating', null);
+    }
+
+    public function test_show_reports_the_correct_rounded_average_rating(): void
+    {
+        $user = User::factory()->create();
+        $platform = Platform::create(['name' => 'SNES']);
+        $game = GameBase::create(['title' => 'Chrono Trigger']);
+
+        $copyA = GameCopy::create(['user_id' => $user->id, 'game_base_id' => $game->id, 'platform_id' => $platform->id]);
+        $copyA->review()->create(['user_id' => $user->id, 'game_base_id' => $game->id, 'rating' => 5]);
+
+        $copyB = GameCopy::create(['user_id' => $user->id, 'game_base_id' => $game->id, 'platform_id' => $platform->id]);
+        $copyB->review()->create(['user_id' => $user->id, 'game_base_id' => $game->id, 'rating' => 4]);
+
+        $response = $this->getJson("/api/users/{$user->name}");
+
+        $response->assertOk();
+        $response->assertJsonPath('avg_rating', 4.5);
+    }
 }

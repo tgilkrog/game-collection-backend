@@ -15,7 +15,6 @@ class GameCopy extends Model
         'region',
         'purchase_price',
         'purchase_date',
-        'notes',
     ];
 
     protected $casts = [
@@ -38,5 +37,10 @@ class GameCopy extends Model
     public function parts()
     {
         return $this->hasMany(CopyPart::class);
+    }
+
+    public function review()
+    {
+        return $this->hasOne(GameCopyReview::class);
     }
 }

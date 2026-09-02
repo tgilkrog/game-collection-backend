@@ -23,7 +23,14 @@ class GameCopyResource extends JsonResource
             'region' => $this->region,
             'purchase_price' => $this->purchase_price,
             'purchase_date' => $this->purchase_date,
-            'notes' => $this->notes,
+            'review_id' => $this->review?->id,
+            'play_status' => $this->review?->play_status ?? 'backlog',
+            'rating' => $this->review?->rating,
+            'hours_played' => $this->review?->hours_played,
+            'notes' => $this->review?->notes,
+            'playthrough_count' => $this->review?->playthrough_count,
+            'would_replay' => $this->review?->would_replay,
+            'would_recommend' => $this->review?->would_recommend,
             'game' => new GameBaseResource(
                 $this->whenLoaded('game')
             ),

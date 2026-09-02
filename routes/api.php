@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ConditionController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\GameBaseController;
 use App\Http\Controllers\Api\GameCopyController;
+use App\Http\Controllers\Api\GameCopyReviewController;
 use App\Http\Controllers\Api\GameModeController;
 use App\Http\Controllers\Api\GenreController;
 use App\Http\Controllers\Api\HomeController;
@@ -32,6 +33,8 @@ Route::get('/users/{user}/wishlist', [WishlistController::class, 'index']);
 Route::get('/users/{user}/stats', [UserController::class, 'stats']);
 Route::get('/game-copies', [GameCopyController::class, 'index']);
 Route::get('/game-copies/export', [GameCopyController::class, 'export'])->middleware('auth:sanctum');
+Route::get('/game-copies/random-backlog', [GameCopyController::class, 'randomBacklog'])->middleware('auth:sanctum');
+Route::get('/game-copy-reviews/history', [GameCopyReviewController::class, 'history'])->middleware('auth:sanctum');
 Route::get('/game-copies/{gameCopy}', [GameCopyController::class, 'show']);
 Route::get('/conditions', [ConditionController::class, 'index']);
 Route::get('/platforms', [PlatformController::class, 'index']);
@@ -90,6 +93,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/game-copies', [GameCopyController::class, 'store']);
     Route::put('/game-copies/{gameCopy}', [GameCopyController::class, 'update']);
     Route::delete('/game-copies/{gameCopy}', [GameCopyController::class, 'destroy']);
+
+    Route::delete('/game-copy-reviews/{gameCopyReview}', [GameCopyReviewController::class, 'destroy']);
 
     Route::get('/barcode-lookup', [BarcodeLookupController::class, 'show'])->middleware('throttle:20,1');
 

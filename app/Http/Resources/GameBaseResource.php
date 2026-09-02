@@ -27,7 +27,7 @@ class GameBaseResource extends JsonResource
                 'region' => $c->region,
                 'purchase_price' => $c->purchase_price,
                 'purchase_date' => $c->purchase_date,
-                'notes' => $c->notes,
+                'notes' => $c->review?->notes,
                 'platform' => $c->platform ? ['id' => $c->platform->id, 'name' => $c->platform->name] : null,
                 'parts' => $c->relationLoaded('parts') ? $c->parts->map(fn ($p) => [
                     'id' => $p->id,

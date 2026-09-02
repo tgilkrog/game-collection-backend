@@ -48,7 +48,8 @@ class UserController extends Controller
                 (select coalesce(sum(purchase_price), 0) from game_copies where game_copies.user_id = users.id) as total_value,
                 (select count(distinct platform_id) from game_copies where game_copies.user_id = users.id) as platform_count,
                 (select count(*) from follows where follows.following_id = users.id) as followers_count,
-                (select count(*) from follows where follows.follower_id = users.id) as following_count
+                (select count(*) from follows where follows.follower_id = users.id) as following_count,
+                (select round(avg(gcr.rating), 1) from game_copy_reviews gcr join game_copies gc on gc.id = gcr.game_copy_id where gc.user_id = users.id and gcr.rating is not null) as avg_rating
             ')
             ->first();
 
@@ -72,6 +73,7 @@ class UserController extends Controller
             'following_count' => (int) $stats->following_count,
             'is_following' => $isFollowing,
             'rank' => UserRank::fromCount((int) $stats->copy_count),
+            'avg_rating' => $stats->avg_rating !== null ? (float) $stats->avg_rating : null,
         ]);
     }
 
@@ -170,15 +172,37 @@ class UserController extends Controller
             ])
             ->values();
 
-        return response()->json(compact('byPlatform', 'byGenre', 'byDecade'));
+        $byGenreRating = $user->gameCopies()
+            ->join('game_copy_reviews', 'game_copy_reviews.game_copy_id', '=', 'game_copies.id')
+            ->join('game_bases', 'game_bases.id', '=', 'game_copies.game_base_id')
+            ->join('game_genre', 'game_genre.game_base_id', '=', 'game_bases.id')
+            ->join('genres', 'genres.id', '=', 'game_genre.genre_id')
+            ->whereNotNull('game_copy_reviews.rating')
+            ->selectRaw('genres.name as name, avg(game_copy_reviews.rating) as avg_rating, count(*) as count')
+            ->groupBy('genres.id', 'genres.name')
+            ->orderByDesc('avg_rating')
+            ->limit(8)
+            ->get()
+            ->map(fn ($row) => [
+                'name' => $row->name,
+                'avg_rating' => round((float) $row->avg_rating, 1),
+                'count' => (int) $row->count,
+            ])
+            ->values();
+
+        return response()->json(compact('byPlatform', 'byGenre', 'byDecade', 'byGenreRating'));
     }
 
-    public function gameCopies(User $user)
+    public function gameCopies(Request $request, User $user)
     {
-        $copies = $user->gameCopies()
-            ->with(['game', 'platform'])
-            ->orderBy('purchase_date', 'desc')
-            ->paginate(24);
+        $query = $user->gameCopies()->with(['game', 'platform', 'review']);
+
+        if ($request->filled('play_status')) {
+            $ids = (array) $request->input('play_status');
+            $query->whereHas('review', fn ($q) => $q->whereIn('play_status', $ids));
+        }
+
+        $copies = $query->orderBy('purchase_date', 'desc')->paginate(24);
 
         return GameCopyResource::collection($copies);
     }
